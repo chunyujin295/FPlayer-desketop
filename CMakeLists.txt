@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 4.1)
+cmake_minimum_required(VERSION 3.15)
 project(FPlayer_desketop)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -14,10 +14,6 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 add_subdirectory(core)
 add_subdirectory(widget)
 
-add_executable(${PROJECT_NAME} main.cpp)
-
-target_link_libraries(${PROJECT_NAME} PRIVATE Logger)
-
 install_qt_libs(${CMAKE_RUNTIME_OUTPUT_DIRECTORY} QT_LIBS
         Core
         Gui
@@ -26,6 +22,7 @@ install_qt_libs(${CMAKE_RUNTIME_OUTPUT_DIRECTORY} QT_LIBS
         Xml
         Svg
         Multimedia
+        MultimediaWidgets
 )
 
 

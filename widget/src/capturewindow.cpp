@@ -10,11 +10,14 @@
 
 #include "../include/widget/capturewindow.h"
 #include "ui_CaptureWindow.h"
+#include <QVideoWidget>
 
 
 CaptureWindow::CaptureWindow(QWidget* parent) : QWidget(parent), ui(new Ui::CaptureWindow)
 {
     ui->setupUi(this);
+    auto vdw = new QVideoWidget(this->ui->wgtTop);
+    vdw->show();
 }
 
 CaptureWindow::~CaptureWindow()
