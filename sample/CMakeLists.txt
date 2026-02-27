@@ -14,3 +14,4 @@ target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Core Qt6::Widgets Qt6::Gui)
 target_link_libraries(${PROJECT_NAME} PRIVATE FPlayer_Widget FPlayer_Core)
 
 #copy_imported_dependencies(${PROJECT_NAME} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+qt_deploy_runtime(FPlayer_Sample)

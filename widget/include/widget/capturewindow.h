@@ -13,6 +13,10 @@
 #include <widget/export.h>
 
 
+class QCameraDevice;
+class QCamera;
+class QMediaCaptureSession;
+class QVideoWidget;
 QT_BEGIN_NAMESPACE
 
 namespace Ui
@@ -30,9 +34,16 @@ class FPLAYER_WIDGET_EXPORT CaptureWindow : public QWidget
         explicit CaptureWindow(QWidget* parent = nullptr);
 
         ~CaptureWindow() override;
+    private:
+        void refreshCameras();
+        bool selectCamera(int index);
 
     private:
         Ui::CaptureWindow* ui;
+        QVideoWidget* m_view = nullptr;
+        QMediaCaptureSession* m_session = nullptr;
+        QCamera* m_camera = nullptr;
+        QList<QCameraDevice> m_devices;
 };
 
 

@@ -15,17 +15,6 @@ add_subdirectory(core)
 add_subdirectory(widget)
 add_subdirectory(sample)
 
-install_qt_libs(${CMAKE_RUNTIME_OUTPUT_DIRECTORY} QT_LIBS
-        Core
-        Gui
-        Widgets
-        Qml
-        Xml
-        Svg
-        Multimedia
-        MultimediaWidgets
-        NetWork
-)
 
 
 

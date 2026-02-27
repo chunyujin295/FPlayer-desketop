@@ -78,90 +78,182 @@ function(export_symbol target location)
     target_compile_definitions(${target} PRIVATE "${TARGET_NAME}_LIBRARY")
 endfunction()
 
+# --------------------------------------------------
+# Qt5版本的
 # \brief 函数名称 : install_qt_libs【安装Qt库】
 # @QT_LIBS      : Qt库列表
 # @dest_dir     : 安装目录
-function(install_qt_libs dest_dir)
+# --------------------------------------------------
+#function(install_qt_libs dest_dir)
+#    set(options)
+#    set(oneValueArgs)
+#    set(multiValueArgs QT_LIBS)
+#    cmake_parse_arguments(INSTALL_QT_LIBS
+#            "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+#
+#    if (WIN32 AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
+#        set(DEBUG_SUFFIX)
+#        if (MSVC AND CMAKE_BUILD_TYPE MATCHES "Debug")
+#            set(DEBUG_SUFFIX "d")
+#        endif ()
+#
+#        # 推导 Qt 安装目录
+#        set(QT_INSTALL_PATH "${Qt6_DIR}/../../../")
+#        if (NOT EXISTS "${QT_INSTALL_PATH}/bin")
+#            set(QT_INSTALL_PATH "${QT_INSTALL_PATH}/..")
+#            if (NOT EXISTS "${QT_INSTALL_PATH}/bin")
+#                set(QT_INSTALL_PATH "${QT_INSTALL_PATH}/..")
+#            endif ()
+#        endif ()
+#
+#        # 平台插件 (Windows 必需)
+#        if (EXISTS "${QT_INSTALL_PATH}/plugins/platforms/qwindows${DEBUG_SUFFIX}.dll")
+#            execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory
+#                    "${dest_dir}/plugins/platforms/")
+#            execute_process(COMMAND ${CMAKE_COMMAND} -E copy
+#                    "${QT_INSTALL_PATH}/plugins/platforms/qwindows${DEBUG_SUFFIX}.dll"
+#                    "${dest_dir}/plugins/platforms/")
+#        endif ()
+#
+#        # Qt 库和插件目录映射（相对完整）
+#        set(QT_PLUGIN_MAP
+#                Gui "platforms\;imageformats\;iconengines\;platforminputcontexts\;styles"
+#                Widgets "platforms\;imageformats\;iconengines\;platforminputcontexts\;styles"
+#                Network "bearer"
+#                Sql "sqldrivers"
+#                Svg "imageformats"
+#                Multimedia "mediaservice\;audio"
+#                MultimediaWidgets "mediaservice\;audio"
+#                Qml "qmltooling"
+#                Quick "scenegraph\;qmltooling"
+#                Positioning "position"
+#                Sensors "sensors"
+#                Bluetooth "bluetooth"
+#                PrintSupport "printsupport"
+#                WebEngineCore "resources\;translations"
+#                WebView "resources\;translations"
+#                TextToSpeech "texttospeech"
+#                VirtualKeyboard "virtualkeyboard"
+#        )
+#
+#        # 拷贝库和插件
+#        foreach (QT_LIB ${INSTALL_QT_LIBS_QT_LIBS})
+#            # DLL
+#            execute_process(COMMAND ${CMAKE_COMMAND} -E copy
+#                    "${QT_INSTALL_PATH}/bin/Qt6${QT_LIB}${DEBUG_SUFFIX}.dll"
+#                    "${dest_dir}")
+#
+#            # 查找插件映射
+#            list(FIND QT_PLUGIN_MAP ${QT_LIB} plugin_index)
+#            if (NOT plugin_index EQUAL -1)
+#                math(EXPR plugin_value_index "${plugin_index} + 1")
+#                list(GET QT_PLUGIN_MAP ${plugin_value_index} plugin_dirs_str)
+#                string(REPLACE ";" "|" plugin_dirs_pattern "${plugin_dirs_str}") # 防止 split 被误解
+#                string(REPLACE ";" ";" plugin_dirs "${plugin_dirs_str}")
+#
+#                foreach (plugin_dir ${plugin_dirs})
+#                    set(src_plugin_dir "${QT_INSTALL_PATH}/plugins/${plugin_dir}")
+#                    set(dst_plugin_dir "${dest_dir}/plugins/${plugin_dir}")
+#
+#                    if (EXISTS "${src_plugin_dir}")
+#                        execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory "${dst_plugin_dir}")
+#                        file(GLOB plugin_files "${src_plugin_dir}/*${DEBUG_SUFFIX}.dll")
+#                        foreach (plugin_file ${plugin_files})
+#                            execute_process(COMMAND ${CMAKE_COMMAND} -E copy
+#                                    "${plugin_file}" "${dst_plugin_dir}")
+#                        endforeach ()
+#                    endif ()
+#                endforeach ()
+#            endif ()
+#        endforeach ()
+#    endif ()
+#endfunction()
+
+# ------------------------------------------------------------
+# qt_deploy_runtime(<target>
+#     [DEST_DIR <dir>]               # 部署目录（默认：目标exe所在目录）
+#     [PLUGIN_DIR <dir>]             # 插件目录名（默认：plugins）
+#     [QML_DIR <dir>]                # 如有QML可传入（可选）
+#     [EXTRA_ARGS <...>]             # 额外 windeployqt 参数（可选）
+# )
+#
+# 示例：
+#   qt_deploy_runtime(FPlayer_Sample
+#       EXTRA_ARGS --multimedia
+#   )
+#
+#   qt_deploy_runtime(MyApp
+#       DEST_DIR "${CMAKE_BINARY_DIR}/deploy/$<CONFIG>"
+#       PLUGIN_DIR "plugins"
+#       EXTRA_ARGS --multimedia --no-translations
+#   )
+# ------------------------------------------------------------
+function(qt_deploy_runtime target)
+    if (NOT WIN32)
+        return()
+    endif()
+
+    if (NOT TARGET ${target})
+        message(FATAL_ERROR "qt_deploy_runtime: target '${target}' does not exist")
+    endif()
+
     set(options)
-    set(oneValueArgs)
-    set(multiValueArgs QT_LIBS)
-    cmake_parse_arguments(INSTALL_QT_LIBS
+    set(oneValueArgs DEST_DIR PLUGIN_DIR QML_DIR)
+    set(multiValueArgs EXTRA_ARGS)
+    cmake_parse_arguments(QTDEPLOY
             "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
-    if (WIN32 AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
-        set(DEBUG_SUFFIX)
-        if (MSVC AND CMAKE_BUILD_TYPE MATCHES "Debug")
-            set(DEBUG_SUFFIX "d")
-        endif ()
+    # 默认插件目录
+    if (NOT QTDEPLOY_PLUGIN_DIR)
+        set(QTDEPLOY_PLUGIN_DIR "plugins")
+    endif()
 
-        # 推导 Qt 安装目录
-        set(QT_INSTALL_PATH "${Qt6_DIR}/../../../")
-        if (NOT EXISTS "${QT_INSTALL_PATH}/bin")
-            set(QT_INSTALL_PATH "${QT_INSTALL_PATH}/..")
-            if (NOT EXISTS "${QT_INSTALL_PATH}/bin")
-                set(QT_INSTALL_PATH "${QT_INSTALL_PATH}/..")
-            endif ()
-        endif ()
+    # 找到 windeployqt（通过 Qt6::qmake 推导 Qt bin 目录）
+    get_target_property(_qmake_exe Qt6::qmake IMPORTED_LOCATION)
+    if (NOT _qmake_exe)
+        message(FATAL_ERROR "qt_deploy_runtime: cannot locate Qt6::qmake. Did you call find_package(Qt6 ...)?")
+    endif()
+    get_filename_component(_qt_bin_dir "${_qmake_exe}" DIRECTORY)
+    set(_windeployqt "${_qt_bin_dir}/windeployqt.exe")
 
-        # 平台插件 (Windows 必需)
-        if (EXISTS "${QT_INSTALL_PATH}/plugins/platforms/qwindows${DEBUG_SUFFIX}.dll")
-            execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory
-                    "${dest_dir}/plugins/platforms/")
-            execute_process(COMMAND ${CMAKE_COMMAND} -E copy
-                    "${QT_INSTALL_PATH}/plugins/platforms/qwindows${DEBUG_SUFFIX}.dll"
-                    "${dest_dir}/plugins/platforms/")
-        endif ()
+    if (NOT EXISTS "${_windeployqt}")
+        message(FATAL_ERROR "qt_deploy_runtime: windeployqt not found at: ${_windeployqt}")
+    endif()
 
-        # Qt 库和插件目录映射（相对完整）
-        set(QT_PLUGIN_MAP
-                Gui "platforms\;imageformats\;iconengines\;platforminputcontexts\;styles"
-                Widgets "platforms\;imageformats\;iconengines\;platforminputcontexts\;styles"
-                Network "bearer"
-                Sql "sqldrivers"
-                Svg "imageformats"
-                Multimedia "mediaservice\;audio"
-                MultimediaWidgets "mediaservice\;audio"
-                Qml "qmltooling"
-                Quick "scenegraph\;qmltooling"
-                Positioning "position"
-                Sensors "sensors"
-                Bluetooth "bluetooth"
-                PrintSupport "printsupport"
-                WebEngineCore "resources\;translations"
-                WebView "resources\;translations"
-                TextToSpeech "texttospeech"
-                VirtualKeyboard "virtualkeyboard"
-        )
+    # 部署目录：默认使用 exe 所在目录；也可指定 DEST_DIR
+    if (QTDEPLOY_DEST_DIR)
+        set(_dest_dir "${QTDEPLOY_DEST_DIR}")
+        # WORKING_DIRECTORY 必须是实际目录（生成表达式可以用在命令里，但这里也支持）
+        # 我们把 workdir 统一设为目标exe目录，命令里用 --dir 指到 DEST_DIR（更稳）
+        set(_work_dir "$<TARGET_FILE_DIR:${target}>")
+        set(_dir_arg --dir "${_dest_dir}")
+    else()
+        set(_work_dir "$<TARGET_FILE_DIR:${target}>")
+        set(_dir_arg) # 不传 --dir，则默认部署到 exe 同级
+    endif()
 
-        # 拷贝库和插件
-        foreach (QT_LIB ${INSTALL_QT_LIBS_QT_LIBS})
-            # DLL
-            execute_process(COMMAND ${CMAKE_COMMAND} -E copy
-                    "${QT_INSTALL_PATH}/bin/Qt6${QT_LIB}${DEBUG_SUFFIX}.dll"
-                    "${dest_dir}")
+    # QML：可选
+    set(_qml_arg)
+    if (QTDEPLOY_QML_DIR)
+        set(_qml_arg --qmldir "${QTDEPLOY_QML_DIR}")
+    endif()
 
-            # 查找插件映射
-            list(FIND QT_PLUGIN_MAP ${QT_LIB} plugin_index)
-            if (NOT plugin_index EQUAL -1)
-                math(EXPR plugin_value_index "${plugin_index} + 1")
-                list(GET QT_PLUGIN_MAP ${plugin_value_index} plugin_dirs_str)
-                string(REPLACE ";" "|" plugin_dirs_pattern "${plugin_dirs_str}") # 防止 split 被误解
-                string(REPLACE ";" ";" plugin_dirs "${plugin_dirs_str}")
+    # Debug/Release 自动参数
+    # - Debug: --debug
+    # - 其他: --release（你也可以不加，但加上更明确）
+    set(_cfg_arg $<$<CONFIG:Debug>:--debug>$<$<NOT:$<CONFIG:Debug>>:--release>)
 
-                foreach (plugin_dir ${plugin_dirs})
-                    set(src_plugin_dir "${QT_INSTALL_PATH}/plugins/${plugin_dir}")
-                    set(dst_plugin_dir "${dest_dir}/plugins/${plugin_dir}")
-
-                    if (EXISTS "${src_plugin_dir}")
-                        execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory "${dst_plugin_dir}")
-                        file(GLOB plugin_files "${src_plugin_dir}/*${DEBUG_SUFFIX}.dll")
-                        foreach (plugin_file ${plugin_files})
-                            execute_process(COMMAND ${CMAKE_COMMAND} -E copy
-                                    "${plugin_file}" "${dst_plugin_dir}")
-                        endforeach ()
-                    endif ()
-                endforeach ()
-            endif ()
-        endforeach ()
-    endif ()
+    # 组装命令
+    add_custom_command(TARGET ${target} POST_BUILD
+            COMMAND "${_windeployqt}"
+            ${_cfg_arg}
+            ${_dir_arg}
+            --plugindir "${QTDEPLOY_PLUGIN_DIR}"
+            ${_qml_arg}
+            ${QTDEPLOY_EXTRA_ARGS}
+            "$<TARGET_FILE:${target}>"
+            WORKING_DIRECTORY "${_work_dir}"
+            COMMENT "Deploying Qt runtime for target '${target}' via windeployqt..."
+            VERBATIM
+    )
 endfunction()
