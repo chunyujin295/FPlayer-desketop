@@ -17,6 +17,9 @@ int main(int argc, char* argv[])
 #endif
 
     QApplication app(argc, argv);
+
+    // 应用级图标（任务栏/Alt-Tab/托盘等更统一）
+    app.setWindowIcon(QIcon(":/icon/img.png"));
     CaptureWindow main;
 
     main.show();
