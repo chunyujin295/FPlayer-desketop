@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./doc/img/icons/LOGO_WORD_CUTED.png" alt="LOGO_WORD_CUTED" width="100">
+  <img src="./doc/img/icons/LOGO_WORD_CUTED.png" alt="LOGO_WORD_CUTED" width="200">
 </p>
 <p align="center">
   <img src="./doc/img/icons/LOGO_ICON_CUTED.png" alt="LOGO_ICON_CUTED" width="200">
