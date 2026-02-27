@@ -76,6 +76,8 @@ UI：Qt widget
 | C++  | 17     |
 | Qt   | 6.10.2 |
 
-![build.png](./doc/img/build/build.png)
+<p align="center">
+  <img src="./doc/img/build/build.png" alt="build">
+</p>
 
 
