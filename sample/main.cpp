@@ -16,7 +16,8 @@ int main(int argc, char* argv[])
     SetConsoleCP(CP_UTF8);
 #endif
 
-    qInstallMessageHandler(fplayer::qtToSpdlogHandler);
+    // 将 Qt 默认的日志系统重定向到 Logger，
+    qInstallMessageHandler(fplayer::qtToLoggerHandler);
 
     QApplication app(argc, argv);
 

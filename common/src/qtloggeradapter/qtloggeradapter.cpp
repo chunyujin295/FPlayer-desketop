@@ -6,7 +6,7 @@
 #include <QMessageLogContext>
 #include <logger/logger.h>
 
-void fplayer::qtToSpdlogHandler(QtMsgType type, const QMessageLogContext& ctx, const QString& msg)
+void fplayer::qtToLoggerHandler(QtMsgType type, const QMessageLogContext& ctx, const QString& msg)
 {
     if (g_inQtHandler) return;
     g_inQtHandler = true;
