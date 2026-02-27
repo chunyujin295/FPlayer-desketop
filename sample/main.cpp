@@ -4,7 +4,7 @@
 #endif
 
 #include <widget/capturewindow.h>
-
+#include <common/qtloggeradapter/qtloggeradapter.h>
 
 int main(int argc, char* argv[])
 {
@@ -15,6 +15,8 @@ int main(int argc, char* argv[])
     // 可选：设置控制台输入为 UTF-8
     SetConsoleCP(CP_UTF8);
 #endif
+
+    qInstallMessageHandler(fplayer::qtToSpdlogHandler);
 
     QApplication app(argc, argv);
 

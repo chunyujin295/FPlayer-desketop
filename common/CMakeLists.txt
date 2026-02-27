@@ -5,7 +5,9 @@ find_package(Qt6 COMPONENTS Core REQUIRED)
 add_standard_module(${PROJECT_NAME} include/common ON ON)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Core)
-target_link_libraries(${PROJECT_NAME} PRIVATE Logger)
+target_link_libraries(${PROJECT_NAME} PUBLIC Logger)
+# 只要一个头文件会被别人 include，它依赖的 include 路径/库就必须通过 PUBLIC/INTERFACE 传递给使用者
+# 现在common会被sample调用，所以需要将Logger设为公共的
 
 # 设置安装项目
 install(TARGETS ${PROJECT_NAME}
