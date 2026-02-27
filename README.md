@@ -1,8 +1,9 @@
-
-
-<div><center><img src="https://map--depot.oss-cn-hangzhou.aliyuncs.com/image/LOGO_WORD_CUTED.png" alt="LOGO_WORD_CUTED" style="zoom:50%;" /></center></div>
-
-<div><center><img src="https://map--depot.oss-cn-hangzhou.aliyuncs.com/image/LOGO_ICON_CUTED.png" alt="LOGO_ICON_CUTED" style="zoom:33%;" /></center></div>
+<p align="center">
+  <img src="./doc/img/icons/LOGO_WORD_CUTED.png" alt="LOGO_WORD_CUTED" width="200">
+</p>
+<p align="center">
+  <img src="./doc/img/icons/LOGO_ICON_CUTED.png" alt="LOGO_ICON_CUTED" width="200">
+</p>
 
 # 产品
 
@@ -75,4 +76,5 @@ UI：Qt widget
 | Qt   | 6.10.2 |
 
 ![build.png](./doc/img/build/build.png)
+
 

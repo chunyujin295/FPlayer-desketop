@@ -14,7 +14,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 add_subdirectory(common)
 add_subdirectory(api)
 add_subdirectory(widget)
-add_subdirectory(sample)
+add_subdirectory(app)
 
 
 

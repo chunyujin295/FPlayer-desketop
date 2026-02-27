@@ -178,7 +178,7 @@ endfunction()
 # )
 #
 # 示例：
-#   qt_deploy_runtime(FPlayer_Sample
+#   qt_deploy_runtime(FPlayer_App
 #       EXTRA_ARGS --multimedia
 #   )
 #

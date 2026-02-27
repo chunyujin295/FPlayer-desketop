@@ -3,6 +3,6 @@ set(SPDLOG_BUILD_SHARED ON CACHE BOOL "spdlog Build Shared Lib" FORCE) # 覆盖s
 # Logger
 CPMAddPackage(
         NAME Logger
-        GIT_REPOSITORY https://github.com/chunyujin295/Logger.git
-        GIT_TAG v1.0.9
+        GIT_REPOSITORY git@github.com:chunyujin295/Logger.git
+        GIT_TAG v1.0.10
 )

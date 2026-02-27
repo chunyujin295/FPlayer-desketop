@@ -1,4 +1,4 @@
-project(FPlayer_Sample)
+project(FPlayer_App)
 
 include(../cmake/utils.cmake)
 config_project(ON)
