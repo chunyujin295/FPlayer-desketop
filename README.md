@@ -67,5 +67,5 @@ UI：Qt widget
 
 
 
-![build.png](build.png)
+![build.png](./doc/img/build/build.png)
 
