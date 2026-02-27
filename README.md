@@ -27,6 +27,8 @@
 
 一开始想要使用的是GStreamer框架 + webRtc，其中ffmpeg作为插件集成进入GStreamer。但是GStreamer学习成本可能稍高，且Windows下部署存在一定难度。因此当前想法为：跨平台+部署方便为第一优先级。
 
+### -1.核心层使用FFmpeg命令行工具
+
 ### 0.编解码直接使用Qt音视频库
 
 编解码：Qt 音视频库（Qt6）
@@ -37,7 +39,7 @@ UI：Qt widget
 
 ### 1.更容易部署的角度
 
-编解码：ffmpeg
+编解码：ffmpeg-Api
 
 传输层：RTSP/RTP
 
@@ -45,7 +47,7 @@ UI：Qt widget
 
 ### 2.网络更好的角度
 
-编解码：ffmpeg
+编解码：ffmpeg-Api
 
 传输层：原生WebRTC（C++栈）
 
