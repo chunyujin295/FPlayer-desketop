@@ -11,7 +11,7 @@ file(GLOB_RECURSE "qrcs" CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/res/*.qr
 
 target_sources(${PROJECT_NAME} PRIVATE ${src} ${uis} ${qrcs})
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Core Qt6::Widgets Qt6::Gui)
-target_link_libraries(${PROJECT_NAME} PRIVATE FPlayer_Common FPlayer_Widget FPlayer_Core)
+target_link_libraries(${PROJECT_NAME} PRIVATE FPlayer_Common FPlayer_Widget FPlayer_Api)
 
 #copy_imported_dependencies(${PROJECT_NAME} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 
