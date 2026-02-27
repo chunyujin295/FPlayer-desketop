@@ -10,6 +10,7 @@
 #define FPLAYER_DESKETOP_CAPTUREWINDOW_H
 
 #include <QWidget>
+#include <widget/export.h>
 
 
 QT_BEGIN_NAMESPACE
@@ -21,7 +22,7 @@ namespace Ui
 
 QT_END_NAMESPACE
 
-class CaptureWindow : public QWidget
+class FPLAYER_WIDGET_EXPORT CaptureWindow : public QWidget
 {
     Q_OBJECT
 

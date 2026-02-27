@@ -24,6 +24,7 @@ install_qt_libs(${CMAKE_RUNTIME_OUTPUT_DIRECTORY} QT_LIBS
         Svg
         Multimedia
         MultimediaWidgets
+        NetWork
 )
 
 
