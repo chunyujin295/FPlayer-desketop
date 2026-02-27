@@ -243,6 +243,12 @@ function(qt_deploy_runtime target)
     # - 其他: --release（你也可以不加，但加上更明确）
     set(_cfg_arg $<$<CONFIG:Debug>:--debug>$<$<NOT:$<CONFIG:Debug>>:--release>)
 
+    # 兜底：qwindows 插件路径（按 config 自动选择 d 后缀）
+    set(_qwindows_src
+            "$<$<CONFIG:Debug>:${_qt_plugins_dir}/platforms/qwindowsd.dll>$<$<NOT:$<CONFIG:Debug>>:${_qt_plugins_dir}/platforms/qwindows.dll>"
+    )
+    set(_qwindows_dst_dir "${_deploy_root}/${QTDEPLOY_PLUGIN_DIR}/platforms")
+
     # 组装命令
     add_custom_command(TARGET ${target} POST_BUILD
             COMMAND "${_windeployqt}"
@@ -256,4 +262,90 @@ function(qt_deploy_runtime target)
             COMMENT "Deploying Qt runtime for target '${target}' via windeployqt..."
             VERBATIM
     )
+endfunction()
+
+
+# ------------------------------------------------------------
+# qt_install_deploy_windeployqt(target
+#    [EXTRA_ARGS ...]          # 额外参数，比如 --multimedia
+#    [PLUGIN_DIR_NAME <name>]  # 默认 plugins（相对于 exe 同级）
+# )
+#
+# 作用：
+#   不负责 install target，只在 install 结束时：
+#   1) 定位安装后的 exe 路径（不猜 bin，不拼路径）
+#   2) cd 到 exe 所在目录
+#   3) 对该 exe 运行 windeployqt，把 plugins/ 和依赖部署到 exe 同级
+# ------------------------------------------------------------
+function(qt_install_deploy_windeployqt target)
+    if (NOT WIN32)
+        return()
+    endif()
+    if (NOT TARGET ${target})
+        message(FATAL_ERROR "qt_install_deploy_windeployqt: target '${target}' does not exist")
+    endif()
+
+    set(options)
+    set(oneValueArgs PLUGIN_DIR_NAME)
+    set(multiValueArgs EXTRA_ARGS)
+    cmake_parse_arguments(QTINST
+            "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+    if (NOT QTINST_PLUGIN_DIR_NAME)
+        set(QTINST_PLUGIN_DIR_NAME "plugins")
+    endif()
+
+    # 找 windeployqt
+    get_target_property(_qmake_exe Qt6::qmake IMPORTED_LOCATION)
+    if (NOT _qmake_exe)
+        message(FATAL_ERROR "qt_install_deploy_windeployqt: Qt6::qmake not found. Call find_package(Qt6 ...) first.")
+    endif()
+    get_filename_component(_qt_bin_dir "${_qmake_exe}" DIRECTORY)
+    set(_windeployqt "${_qt_bin_dir}/windeployqt.exe")
+
+    # 关键：用生成表达式得到“安装后exe路径”（不猜，不拼 bin）
+    # $<TARGET_FILE_NAME:...> 只是文件名；DESTINATION 由你的 install(TARGETS) 决定
+    #
+    # CMake install 阶段可用变量：CMAKE_INSTALL_PREFIX、CMAKE_INSTALL_CONFIG_NAME
+    # 我们不猜 DESTINATION，但仍需拿到“exe所在目录”才能 WORKING_DIRECTORY 正确。
+    #
+    # 最稳做法：让你显式传一个“运行目录相对路径”，但你明确说不想传/不想猜。
+    # 因此我们走第二稳：基于 GNUInstallDirs 的 CMAKE_INSTALL_BINDIR，
+    # 因为你自己的 install(TARGETS ...) 里已经用的是 ${CMAKE_INSTALL_BINDIR}。
+    #
+    # 如果你确实把 RUNTIME DESTINATION 指到了别的目录（不是 CMAKE_INSTALL_BINDIR），
+    # 那就需要你把那个相对路径告诉函数（否则 CMake install 没法反推出）。
+    set(_runtime_rel "${CMAKE_INSTALL_BINDIR}")
+
+    install(CODE "
+        message(STATUS \"[deploy] Running windeployqt after install for target: ${target}\")
+
+        set(_cfg \"\${CMAKE_INSTALL_CONFIG_NAME}\")
+        set(_cfg_arg \"--release\")
+        if (_cfg STREQUAL \"Debug\")
+            set(_cfg_arg \"--debug\")
+        endif()
+
+        set(_prefix \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}\")
+        set(_exe_dir \"\${_prefix}/${_runtime_rel}\")
+        set(_exe \"\${_exe_dir}/$<TARGET_FILE_NAME:${target}>\")
+        message(STATUS \"[deploy] exe = \${_exe}\")
+
+        if (NOT EXISTS \"\${_exe}\")
+            message(FATAL_ERROR \"[deploy] exe not found: \${_exe}\")
+        endif()
+
+        execute_process(
+            COMMAND \"${_windeployqt}\"
+                    \"\${_cfg_arg}\"
+                    --plugindir \"${QTINST_PLUGIN_DIR_NAME}\"
+                    ${QTINST_EXTRA_ARGS}
+                    \"\${_exe}\"
+            WORKING_DIRECTORY \"\${_exe_dir}\"
+            RESULT_VARIABLE _ret
+        )
+        if (NOT _ret EQUAL 0)
+            message(FATAL_ERROR \"[deploy] windeployqt failed: \${_ret}\")
+        endif()
+    ")
 endfunction()
