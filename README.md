@@ -65,7 +65,14 @@ UI：Qt widget
 
 ```
 
+# 构建
 
+## 依赖
+
+| 依赖 | 版本   |
+| ---- | ------ |
+| C++  | 17     |
+| Qt   | 6.10.2 |
 
 ![build.png](./doc/img/build/build.png)
 
