@@ -71,7 +71,7 @@ function(export_symbol target location)
 
     set(dst "${CMAKE_CURRENT_SOURCE_DIR}/${location}/export.h")
     if (NOT EXISTS ${dst})
-        configure_file("../cmake/global_template.h.in"
+        configure_file("${CMAKE_SOURCE_DIR}/cmake/global_template.h.in"
                 "${CMAKE_CURRENT_SOURCE_DIR}/${location}/export.h"
                 @ONLY)
     endif ()
