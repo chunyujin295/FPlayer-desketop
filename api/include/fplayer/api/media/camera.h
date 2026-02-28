@@ -8,21 +8,21 @@
   * ************************************************/
 #ifndef FPLAYER_DESKETOP_CAMERA_H
 #define FPLAYER_DESKETOP_CAMERA_H
-#include <qlist.h>
-#include <string>
-#include <vector>
+#include <QList>
+#include <QString>
 #include <fplayer/api/export.h>
 
 namespace fplayer
 {
     struct CameraDescription
     {
-        QString name;
-        QString resolution;
-        QString fps;
+        QString description; // 摄像头描述/名称
+        QString id;
+        int formatIndex = 0; // 当前摄像头的格式索引
+        QList<QString> formats;
     };
 
-    class  FPLAYER_API_EXPORT Camera
+    class FPLAYER_API_EXPORT Camera
     {
         public:
             virtual ~Camera();
@@ -31,9 +31,7 @@ namespace fplayer
 
             virtual void refreshCameras() = 0;
 
-            virtual QList<QString> getCameras() = 0;
-
-            virtual CameraDescription getDescription() = 0;
+            virtual QList<CameraDescription> getDescriptions() = 0;
 
             virtual int getIndex() = 0;
 
@@ -42,11 +40,8 @@ namespace fplayer
             virtual void resume() = 0;
 
         protected:
-            QList<QString> m_cameras;
-            QList<QString> m_res; // 摄像头分辨率
-            QList<QString> m_fps; // 摄像头帧率
-            int m_index = 0;
-            CameraDescription m_description; // 当前摄像头信息
+            int m_cameraIndex = 0;
+            QList<CameraDescription> m_descriptions; // 当前摄像头信息
     };
 }
 

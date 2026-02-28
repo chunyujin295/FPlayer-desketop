@@ -10,29 +10,36 @@
 #define FPLAYER_DESKETOP_CAPTUREQT6_H
 #include <fplayer/backend/media_qt6/export.h>
 #include <fplayer/api/media/camera.h>
+#include <QList>
+#include <qobject.h>
+#include <QString>
 
 namespace fplayer
 {
-    class FPLAYER_BACKEND_MEDIA_QT6_EXPORT CameraQt6 : public Camera
+    class FPLAYER_BACKEND_MEDIA_QT6_EXPORT CameraQt6 : public Camera, public QObject
     {
+            Q_OBJECT
+
         public:
             CameraQt6();
 
-            ~CameraQt6() override =  default;
+            ~CameraQt6() override;
 
             bool selectCamera(int index) override;
 
             void refreshCameras() override;
 
-            QList<QString> getCameras() override;
-
-            CameraDescription getDescription() override;
+            QList<CameraDescription> getDescriptions() override;
 
             int getIndex() override;
 
             void pause() override;
 
             void resume() override;
+
+        private:
+            struct Impl;
+            std::unique_ptr<Impl> m_d;
     };
 } // fplayer
 
