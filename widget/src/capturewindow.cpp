@@ -48,7 +48,10 @@ CaptureWindow::CaptureWindow(QWidget* parent)
 
 	m_service->initCamera(fplayer::MediaBackend::Qt6);
 	auto cameraList = m_service->getCameraList();
-	this->ui->cmbDevices->addItems(QStringList() << cameraList);
+	QStringList list;
+	list << "" << cameraList;
+	this->ui->cmbDevices->addItems(list);
+	this->ui->cmbDevices->setCurrentIndex(0);
 }
 
 void CaptureWindow::refreshCameras()

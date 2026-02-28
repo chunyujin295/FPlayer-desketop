@@ -24,10 +24,25 @@ QList<QString> fplayer::Service::getCameraList() const
 		return cameraList;
 	}
 
-	auto cameraDescriptions = this->m_camera->getDescriptions();
+	const auto cameraDescriptions = this->m_camera->getDescriptions();
 	cameraList = mapList(cameraDescriptions, [](const CameraDescription& description) {
 		return description.description;
 	});
 
 	return cameraList;
+}
+
+QList<QString> fplayer::Service::getCameraFormats(int index) const
+{
+	if (this->m_camera == nullptr)
+	{
+		return {};
+	}
+
+	const auto cameraDescriptions = this->m_camera->getDescriptions();
+	if (index < 0 || index >= cameraDescriptions.size())
+	{
+		return {};
+	}
+	return cameraDescriptions.at(index).formats;
 }

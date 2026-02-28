@@ -20,9 +20,11 @@ namespace fplayer
 
 		~Service();
 
-		void initCamera(MediaBackend  backend = MediaBackend::Qt6);
+		void initCamera(MediaBackend backend = MediaBackend::Qt6);
 
 		QList<QString> getCameraList() const;
+
+		QList<QString> getCameraFormats(int index) const;
 
 	private:
 		std::unique_ptr<fplayer::Camera> m_camera;
