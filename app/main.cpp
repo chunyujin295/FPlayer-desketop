@@ -3,8 +3,8 @@
 #include <windows.h>
 #endif
 
-#include <widget/capturewindow.h>
-#include <common/qtloggeradapter/qtloggeradapter.h>
+#include <fplayer/widget/capturewindow.h>
+#include <fplayer/common/qtloggeradapter/qtloggeradapter.h>
 
 int main(int argc, char* argv[])
 {
@@ -19,6 +19,7 @@ int main(int argc, char* argv[])
     // 将 Qt 默认的日志系统重定向到 Logger，
     qInstallMessageHandler(fplayer::qtToLoggerHandler);
 
+    // QApplication::setStyle("Fusion");
     QApplication app(argc, argv);
 
     // 应用级图标（任务栏/Alt-Tab/托盘等更统一）

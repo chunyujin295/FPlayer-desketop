@@ -10,7 +10,7 @@
 #define FPLAYER_DESKETOP_CAPTUREWINDOW_H
 
 #include <QWidget>
-#include <widget/export.h>
+#include <fplayer/widget/export.h>
 
 
 class QCameraDevice;

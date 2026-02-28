@@ -1,4 +1,4 @@
-#include <api/media/capture.h>
+#include <fplayer/api/media/capture.h>
 
 fplayer::Capture::Capture() {
 }

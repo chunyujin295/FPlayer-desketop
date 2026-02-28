@@ -1,5 +1,5 @@
 /*************************************************
-  * 描述：
+  * 描述：摄像头播放
   *
   * File：capture.h
   * Author：chenyujin@mozihealthcare.cn
@@ -8,7 +8,7 @@
   * ************************************************/
 #ifndef FPLAYER_DESKETOP_CAPTURE_H
 #define FPLAYER_DESKETOP_CAPTURE_H
-#include <api/export.h>
+#include <fplayer/api/export.h>
 
 namespace fplayer
 {

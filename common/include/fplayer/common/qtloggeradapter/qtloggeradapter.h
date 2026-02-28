@@ -9,7 +9,7 @@
 #ifndef FPLAYER_DESKETOP_QTLOGGERADAPTER_H
 #define FPLAYER_DESKETOP_QTLOGGERADAPTER_H
 
-#include <common/export.h>
+#include <fplayer/common/export.h>
 
 namespace fplayer
 {

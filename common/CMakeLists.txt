@@ -2,7 +2,7 @@ project(FPlayer_Common)
 
 find_package(Qt6 COMPONENTS Core REQUIRED)
 
-add_standard_module(${PROJECT_NAME} include/common ON ON)
+add_standard_module(${PROJECT_NAME} include/fplayer/common ON ON)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Core)
 target_link_libraries(${PROJECT_NAME} PUBLIC Logger)

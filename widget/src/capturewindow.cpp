@@ -8,7 +8,7 @@
   * ************************************************/
 // You may need to build the project (run Qt uic code generator) to get "ui_CaptureWindow.h" resolved
 
-#include <widget/capturewindow.h>
+#include <fplayer/widget/capturewindow.h>
 #include "ui_CaptureWindow.h"
 #include <QVideoWidget>
 #include <QVBoxLayout>

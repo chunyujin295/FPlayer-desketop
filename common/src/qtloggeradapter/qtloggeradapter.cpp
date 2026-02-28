@@ -1,4 +1,4 @@
-#include <common/qtloggeradapter/qtloggeradapter.h>
+#include <fplayer/common/qtloggeradapter/qtloggeradapter.h>
 #include <QCoreApplication>
 #include <QDateTime>
 #include <QMutex>
