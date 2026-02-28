@@ -16,7 +16,7 @@
 
 namespace fplayer
 {
-    class FPLAYER_BACKEND_MEDIA_QT6_EXPORT CameraQt6 : public Camera, public QObject
+    class FPLAYER_BACKEND_MEDIA_QT6_EXPORT CameraQt6 : public QObject, public Camera // QObject的继承必须放在第一位
     {
             Q_OBJECT
 
