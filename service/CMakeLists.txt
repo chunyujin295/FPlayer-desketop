@@ -5,7 +5,7 @@ find_package(Qt6 COMPONENTS Core REQUIRED)
 add_standard_module(${PROJECT_NAME} include/fplayer/service ON ON)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Core)
-target_link_libraries(${PROJECT_NAME} PRIVATE FPlayer_Runtime)
+target_link_libraries(${PROJECT_NAME} PUBLIC FPlayer_Runtime FPlayer_Common)
 target_link_libraries(${PROJECT_NAME} PRIVATE Logger)
 
 

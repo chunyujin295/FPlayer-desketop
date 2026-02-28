@@ -15,6 +15,7 @@ add_subdirectory(common)
 add_subdirectory(api)
 add_subdirectory(backend)
 add_subdirectory(runtime)
+add_subdirectory(service)
 add_subdirectory(widget)
 add_subdirectory(app)
 

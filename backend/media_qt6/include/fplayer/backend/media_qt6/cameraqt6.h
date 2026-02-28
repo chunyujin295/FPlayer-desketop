@@ -11,7 +11,7 @@
 #include <fplayer/backend/media_qt6/export.h>
 #include <fplayer/api/media/camera.h>
 #include <QList>
-#include <qobject.h>
+#include <QObject>
 #include <QString>
 
 namespace fplayer

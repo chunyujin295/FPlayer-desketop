@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>827</width>
+    <width>867</width>
     <height>654</height>
    </rect>
   </property>
@@ -144,13 +144,24 @@
        <widget class="QWidget" name="wgtDevices" native="true">
         <layout class="QHBoxLayout" name="horizontalLayout_3">
          <item>
-          <widget class="QComboBox" name="cmbDevices"/>
+          <widget class="QComboBox" name="cmbDevices">
+           <property name="minimumSize">
+            <size>
+             <width>120</width>
+             <height>0</height>
+            </size>
+           </property>
+          </widget>
          </item>
          <item>
-          <widget class="QComboBox" name="cmbRes"/>
-         </item>
-         <item>
-          <widget class="QComboBox" name="cmbFps"/>
+          <widget class="QComboBox" name="cmbFormats">
+           <property name="minimumSize">
+            <size>
+             <width>120</width>
+             <height>0</height>
+            </size>
+           </property>
+          </widget>
          </item>
         </layout>
        </widget>

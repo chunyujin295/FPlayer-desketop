@@ -1,5 +1,5 @@
 /*************************************************
-  * 描述：
+  * 描述：多媒体工厂
   *
   * File：camerafactory.h
   * Author：chenyujin@mozihealthcare.cn
@@ -15,11 +15,13 @@
 
 namespace fplayer
 {
-    enum class MediaBackend {
-        Qt6,
-        FFmpeg
-    };
-    std::unique_ptr<Camera> FPLAYER_RUNTIME_EXPORT createCamera(MediaBackend backend);
+	enum class MediaBackend
+	{
+		Qt6,
+		FFmpeg
+	};
+
+	std::unique_ptr<Camera> FPLAYER_RUNTIME_EXPORT createCamera(MediaBackend backend);
 
 }
 

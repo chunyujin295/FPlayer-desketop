@@ -1,6 +1,5 @@
 project(FPlayer_App)
 
-include(../cmake/utils.cmake)
 config_project(ON)
 add_executable(${PROJECT_NAME} "")
 find_package(Qt6 COMPONENTS Widgets Core Gui Designer REQUIRED)
