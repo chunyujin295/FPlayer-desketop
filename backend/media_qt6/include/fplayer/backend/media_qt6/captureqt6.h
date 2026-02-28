@@ -8,10 +8,10 @@
   * ************************************************/
 #ifndef FPLAYER_DESKETOP_CAPTUREQT6_H
 #define FPLAYER_DESKETOP_CAPTUREQT6_H
-
+#include <fplayer/backend/media_qt6/export.h>
 namespace fplayer
 {
-    class CaptureQt6 {};
+    class FPLAYER_BACKEND_MEDIA_QT6_EXPORT CaptureQt6 {};
 } // fplayer
 
 #endif //FPLAYER_DESKETOP_CAPTUREQT6_H

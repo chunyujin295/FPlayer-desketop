@@ -6,6 +6,6 @@
   * Date：2026/2/28
   * Update：
   * ************************************************/
-#include <fplayer/media_qt6/captureqt6.h>
+#include <fplayer/backend/media_qt6/captureqt6.h>
 
 namespace fplayer {} // fplayer
