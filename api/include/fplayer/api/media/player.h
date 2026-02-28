@@ -16,7 +16,7 @@ namespace fplayer
     class FPLAYER_API_EXPORT Player
     {
         public:
-            Player();
+            virtual ~Player();
     };
 }
 

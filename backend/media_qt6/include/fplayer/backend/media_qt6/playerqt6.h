@@ -1,7 +1,7 @@
 /*************************************************
   * 描述：
   *
-  * File：PlayerQt6.h
+  * File：playerqt6.h
   * Author：chenyujin@mozihealthcare.cn
   * Date：2026/2/28
   * Update：

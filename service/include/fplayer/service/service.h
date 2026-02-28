@@ -1,11 +1,12 @@
 /*************************************************
   * 描述：
   *
-  * File：captureqt6.cpp
+  * File：service.h
   * Author：chenyujin@mozihealthcare.cn
   * Date：2026/2/28
   * Update：
   * ************************************************/
-#include <fplayer/backend/media_qt6/captureqt6.h>
+#ifndef FPLAYER_DESKETOP_SERVICE_H
+#define FPLAYER_DESKETOP_SERVICE_H
 
-namespace fplayer {} // fplayer
+#endif //FPLAYER_DESKETOP_SERVICE_H

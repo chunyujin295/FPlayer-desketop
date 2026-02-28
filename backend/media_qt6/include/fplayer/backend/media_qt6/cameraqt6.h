@@ -1,0 +1,39 @@
+/*************************************************
+  * 描述：
+  *
+  * File：cameraqt6.h
+  * Author：chenyujin@mozihealthcare.cn
+  * Date：2026/2/28
+  * Update：
+  * ************************************************/
+#ifndef FPLAYER_DESKETOP_CAPTUREQT6_H
+#define FPLAYER_DESKETOP_CAPTUREQT6_H
+#include <fplayer/backend/media_qt6/export.h>
+#include <fplayer/api/media/camera.h>
+
+namespace fplayer
+{
+    class FPLAYER_BACKEND_MEDIA_QT6_EXPORT CameraQt6 : public Camera
+    {
+        public:
+            CameraQt6();
+
+            ~CameraQt6() override =  default;
+
+            bool selectCamera(int index) override;
+
+            void refreshCameras() override;
+
+            QList<QString> getCameras() override;
+
+            CameraDescription getDescription() override;
+
+            int getIndex() override;
+
+            void pause() override;
+
+            void resume() override;
+    };
+} // fplayer
+
+#endif //FPLAYER_DESKETOP_CAPTUREQT6_H
