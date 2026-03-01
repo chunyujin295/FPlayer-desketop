@@ -14,8 +14,10 @@ namespace fplayer
 		QCamera* camera = nullptr;
 	};
 
-	CameraQt6::CameraQt6() : m_d(std::make_unique<Impl>())
+	CameraQt6::CameraQt6() :
+		m_d(std::make_unique<Impl>())
 	{
+		m_backend = MediaBackendType::Qt6;
 	}
 
 	CameraQt6::~CameraQt6() = default;

@@ -15,13 +15,8 @@
 
 namespace fplayer
 {
-	enum class MediaBackend
-	{
-		Qt6,
-		FFmpeg
-	};
 
-	std::unique_ptr<Camera> FPLAYER_RUNTIME_EXPORT createCamera(MediaBackend backend);
+	std::unique_ptr<Camera> FPLAYER_RUNTIME_EXPORT createCamera(MediaBackendType backend);
 
 }
 

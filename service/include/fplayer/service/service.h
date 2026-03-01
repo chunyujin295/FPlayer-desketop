@@ -11,6 +11,8 @@
 #include <fplayer/service/export.h>
 #include <fplayer/runtime/mediafactory.h>
 
+class QWidget;
+
 namespace fplayer
 {
 	class FPLAYER_SERVICE_EXPORT Service
@@ -20,14 +22,25 @@ namespace fplayer
 
 		~Service();
 
-		void initCamera(MediaBackend backend = MediaBackend::Qt6);
+		void initCamera(MediaBackendType backend);
+
+		/**
+		 * 初始化摄像头视频播放窗口
+		 * @param widget
+		 */
+		void bindCameraPreview(QWidget* widget);
 
 		QList<QString> getCameraList() const;
 
 		QList<QString> getCameraFormats(int index) const;
 
 	private:
+		void bindCameraPreviewQt6(QWidget* widget);
+		void bindCameraPreviewFFmpeg(QWidget* widget);
+
+	private:
 		std::unique_ptr<fplayer::Camera> m_camera;
+		int m_cameraIndex;// 摄像头索引
 	};
 }
 

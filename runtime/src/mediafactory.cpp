@@ -1,7 +1,7 @@
 #include <fplayer/runtime/mediafactory.h>
 #include <fplayer/backend/media_qt6/cameraqt6.h>
 
-std::unique_ptr<fplayer::Camera> fplayer::createCamera(MediaBackend backend)
+std::unique_ptr<fplayer::Camera> fplayer::createCamera(MediaBackendType backend)
 {
     // switch (backend) {
     //     case MediaBackend::Qt6:

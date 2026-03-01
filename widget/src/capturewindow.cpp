@@ -46,7 +46,7 @@ CaptureWindow::CaptureWindow(QWidget* parent)
 		selectCamera(0);
 	}
 
-	m_service->initCamera(fplayer::MediaBackend::Qt6);
+	m_service->initCamera(fplayer::MediaBackendType::Qt6);
 	auto cameraList = m_service->getCameraList();
 	QStringList list;
 	list << "" << cameraList;
