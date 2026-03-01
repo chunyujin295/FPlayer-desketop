@@ -2,6 +2,7 @@
 
 #include <fplayer/widget/capturewindow.h>
 #include <fplayer/service/service.h>
+#include <fplayer/widget/fvideoview.h>
 
 #include <QVideoWidget>
 #include <QVBoxLayout>
@@ -19,7 +20,7 @@ CaptureWindow::CaptureWindow(QWidget* parent)
 	m_service = new fplayer::Service();
 
 	// 1) 把视频窗口塞进 Designer 里的 wgtTop（而不是 this）
-	auto container = ui->wgtTop;
+	auto container = ui->wgtView;
 
 	// 如果 wgtTop 没有 layout，就创建一个（让 video 填满）
 	if (!container->layout())

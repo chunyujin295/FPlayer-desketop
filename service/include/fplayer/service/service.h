@@ -9,7 +9,7 @@
 #ifndef FPLAYER_DESKETOP_SERVICE_H
 #define FPLAYER_DESKETOP_SERVICE_H
 #include <fplayer/service/export.h>
-#include <fplayer/runtime/mediafactory.h>
+#include <fplayer/runtime/runtime.h>
 
 class QWidget;
 
@@ -28,18 +28,19 @@ namespace fplayer
 		 * 初始化摄像头视频播放窗口
 		 * @param widget
 		 */
-		void bindCameraPreview(QWidget* widget);
+		void bindCameraPreview(fplayer::FVideoView* widget);// TODO service层不能调用widget层
 
 		QList<QString> getCameraList() const;
 
 		QList<QString> getCameraFormats(int index) const;
 
 	private:
-		void bindCameraPreviewQt6(QWidget* widget);
-		void bindCameraPreviewFFmpeg(QWidget* widget);
+		// void bindCameraPreviewQt6(QWidget* widget);
+		// void bindCameraPreviewFFmpeg(QWidget* widget);
 
 	private:
-		std::unique_ptr<fplayer::Camera> m_camera;
+		fplayer::RunTime* m_runtime;
+		std::shared_ptr<fplayer::Camera> m_camera;
 		int m_cameraIndex;// 摄像头索引
 	};
 }

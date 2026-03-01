@@ -1,32 +1,42 @@
 #include <fplayer/service/service.h>
+
+#include <QtMultimediaWidgets/QVideoWidget>
+#include <QtWidgets/QVBoxLayout>
 #include <fplayer/common/maplist/maplist.hpp>
 
 #include <logger/logger.h>
 
-fplayer::Service::Service() = default;
+fplayer::Service::Service() : m_runtime(new RunTime()), m_cameraIndex(0)
+{
+};
 
 fplayer::Service::~Service() = default;
 
 void fplayer::Service::initCamera(MediaBackendType backend)
 {
-	this->m_camera = fplayer::createCamera(backend);
+	this->m_camera = m_runtime->createCamera(backend);
 	if (this->m_camera == nullptr)
 	{
 		LOG_WARN("fplayer::Service::initCamera(MediaBackend backend) ==> 摄像头获取失败");
 	}
 }
 
-void fplayer::Service::bindCameraPreview(QWidget* widget)
+void fplayer::Service::bindCameraPreview(fplayer::FVideoView* widget)
 {
-	switch (this->m_camera->getBackendType())
+	if (widget == nullptr)
 	{
-	case MediaBackendType::Qt6:
-		this->bindCameraPreviewQt6(widget);
-		break;
-	case MediaBackendType::FFmpeg:
-		this->bindCameraPreviewFFmpeg(widget);
-		break;
+		return;
 	}
+
+	// switch (this->m_camera->getBackendType())
+	// {
+	// case MediaBackendType::Qt6:
+	// 	this->bindCameraPreviewQt6(widget);
+	// 	break;
+	// case MediaBackendType::FFmpeg:
+	// 	this->bindCameraPreviewFFmpeg(widget);
+	// 	break;
+	// }
 }
 
 QList<QString> fplayer::Service::getCameraList() const
@@ -60,10 +70,21 @@ QList<QString> fplayer::Service::getCameraFormats(int index) const
 	return cameraDescriptions.at(index).formats;
 }
 
-void fplayer::Service::bindCameraPreviewQt6(QWidget* widget)
-{
-}
-
-void fplayer::Service::bindCameraPreviewFFmpeg(QWidget* widget)
-{
-}
+// void fplayer::Service::bindCameraPreviewQt6(QWidget* widget)
+// {
+// 	PreviewTarget target;
+// 	if (!widget->layout())
+// 	{
+// 		auto layout = new QVBoxLayout(widget);
+// 		layout->setContentsMargins(0, 0, 0, 0);
+// 		layout->setSpacing(0);
+// 		widget->setLayout(layout);
+// 	}
+//
+// 	auto view = new QVideoWidget(widget);
+// 	widget->layout()->addWidget(view);
+// }
+//
+// void fplayer::Service::bindCameraPreviewFFmpeg(QWidget* widget)
+// {
+// }

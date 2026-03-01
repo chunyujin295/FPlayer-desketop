@@ -118,4 +118,8 @@ namespace fplayer
 	void CameraQt6::resume()
 	{
 	}
+
+	void CameraQt6::setPreviewTarget(const PreviewTarget&)
+	{
+	}
 }// fplayer

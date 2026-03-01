@@ -9,6 +9,8 @@
 #ifndef FPLAYER_DESKETOP_CAMERA_H
 #define FPLAYER_DESKETOP_CAMERA_H
 
+#include "previewtarget.h"
+
 #include <QList>
 #include <QString>
 #include <fplayer/api/export.h>
@@ -40,6 +42,8 @@ namespace fplayer
 		virtual void pause() = 0;
 
 		virtual void resume() = 0;
+
+		virtual void setPreviewTarget(const PreviewTarget&) = 0;
 
 		MediaBackendType getBackendType() const;
 

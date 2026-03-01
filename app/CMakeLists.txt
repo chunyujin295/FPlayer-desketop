@@ -1,8 +1,7 @@
 project(FPlayer_App)
 
 config_project(ON)
-add_executable(${PROJECT_NAME} ""
-        ../api/include/fplayer/api/media/mediabackendtype.h)
+add_executable(${PROJECT_NAME} "")
 find_package(Qt6 COMPONENTS Widgets Core Gui Designer REQUIRED)
 
 file(GLOB_RECURSE "src" CONFIGURE_DEPENDS "*.cpp" "*.h")

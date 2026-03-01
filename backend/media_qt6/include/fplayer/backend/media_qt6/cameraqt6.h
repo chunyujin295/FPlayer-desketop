@@ -37,6 +37,8 @@ namespace fplayer
 
             void resume() override;
 
+    	void setPreviewTarget(const PreviewTarget&) override;
+
         private:
             struct Impl;
             std::unique_ptr<Impl> m_d;
