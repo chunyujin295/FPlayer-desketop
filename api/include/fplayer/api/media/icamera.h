@@ -9,12 +9,11 @@
 #ifndef FPLAYER_DESKETOP_CAMERA_H
 #define FPLAYER_DESKETOP_CAMERA_H
 
-#include "previewtarget.h"
-
 #include <QList>
 #include <QString>
 #include <fplayer/api/export.h>
 #include <fplayer/api/media/mediabackendtype.h>
+#include <fplayer/api/media/previewtarget.h>
 
 namespace fplayer
 {
