@@ -26,10 +26,10 @@ namespace fplayer
 		QList<QString> formats;
 	};
 
-	class FPLAYER_API_EXPORT Camera
+	class FPLAYER_API_EXPORT ICamera
 	{
 	public:
-		virtual ~Camera();
+		virtual ~ICamera();
 
 		virtual bool selectCamera(int index) = 0;
 

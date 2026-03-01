@@ -21,12 +21,15 @@ void fplayer::Service::initCamera(MediaBackendType backend)
 	}
 }
 
-void fplayer::Service::bindCameraPreview(fplayer::FVideoView* widget)
+void fplayer::Service::bindCameraPreview(fplayer::IFVideoView* videoView)
 {
-	if (widget == nullptr)
+	if (!videoView || !m_runtime)
 	{
 		return;
 	}
+
+	const auto target = videoView->previewTarget();
+	m_runtime->bindCameraPreview(target);
 
 	// switch (this->m_camera->getBackendType())
 	// {

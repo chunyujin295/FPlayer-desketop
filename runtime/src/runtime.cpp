@@ -1,7 +1,7 @@
 #include <fplayer/runtime/runtime.h>
 #include <fplayer/backend/media_qt6/cameraqt6.h>
 
-std::shared_ptr<fplayer::Camera> fplayer::RunTime::createCamera(MediaBackendType backend)
+std::shared_ptr<fplayer::ICamera> fplayer::RunTime::createCamera(MediaBackendType backend)
 {
 	m_camera.reset();
 	// switch (backend) {
@@ -13,7 +13,7 @@ std::shared_ptr<fplayer::Camera> fplayer::RunTime::createCamera(MediaBackendType
 	return m_camera;
 }
 
-void fplayer::RunTime::bindCameraPreview(const PreviewTarget& target)
+void fplayer::RunTime::bindCameraPreview(const fplayer::PreviewTarget& target)
 {
 	if (!m_camera)
 	{

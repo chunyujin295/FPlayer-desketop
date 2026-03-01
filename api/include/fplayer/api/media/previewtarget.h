@@ -27,7 +27,7 @@ namespace fplayer
 
 	struct PreviewTarget
 	{
-		NativeWindow win;// 给 FFmpeg 用
+		NativeWindow window;// 给 FFmpeg 用
 		// 可选：给特定 backend 的 hint（例如 Qt6 可以用 QVideoSink*）
 		// 注意：API 层不包含 Qt 头文件，只能用 void*。
 		void* backend_hint = nullptr;

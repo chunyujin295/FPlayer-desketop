@@ -119,7 +119,9 @@ namespace fplayer
 	{
 	}
 
-	void CameraQt6::setPreviewTarget(const PreviewTarget&)
+	void CameraQt6::setPreviewTarget(const PreviewTarget& target)
 	{
+		auto* sink = static_cast<QVideoSink*>(target.backend_hint);
+		m_session.setVideoSink(sink);
 	}
 }// fplayer

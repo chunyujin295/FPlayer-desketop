@@ -9,40 +9,42 @@
 #ifndef FPLAYER_DESKETOP_CAPTUREQT6_H
 #define FPLAYER_DESKETOP_CAPTUREQT6_H
 #include <fplayer/backend/media_qt6/export.h>
-#include <fplayer/api/media/camera.h>
+#include <fplayer/api/media/icamera.h>
 #include <QList>
+#include <QtMultimedia/QMediaCaptureSession>
 #include <QObject>
 #include <QString>
 
 namespace fplayer
 {
-    class FPLAYER_BACKEND_MEDIA_QT6_EXPORT CameraQt6 : public QObject, public Camera // QObject的继承必须放在第一位
-    {
-            Q_OBJECT
+	class FPLAYER_BACKEND_MEDIA_QT6_EXPORT CameraQt6 : public QObject, public ICamera// QObject的继承必须放在第一位
+	{
+		Q_OBJECT
 
-        public:
-            CameraQt6();
+	public:
+		CameraQt6();
 
-            ~CameraQt6() override;
+		~CameraQt6() override;
 
-            bool selectCamera(int index) override;
+		bool selectCamera(int index) override;
 
-            void refreshCameras() override;
+		void refreshCameras() override;
 
-            QList<CameraDescription> getDescriptions() override;
+		QList<CameraDescription> getDescriptions() override;
 
-            int getIndex() override;
+		int getIndex() override;
 
-            void pause() override;
+		void pause() override;
 
-            void resume() override;
+		void resume() override;
 
-    	void setPreviewTarget(const PreviewTarget&) override;
+		void setPreviewTarget(const PreviewTarget& target) override;
 
-        private:
-            struct Impl;
-            std::unique_ptr<Impl> m_d;
-    };
-} // fplayer
+	private:
+		struct Impl;
+		std::unique_ptr<Impl> m_d;
+		QMediaCaptureSession m_session;
+	};
+}// fplayer
 
 #endif //FPLAYER_DESKETOP_CAPTUREQT6_H

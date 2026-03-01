@@ -13,10 +13,10 @@
 
 namespace fplayer
 {
-    class FPLAYER_API_EXPORT Player
+    class FPLAYER_API_EXPORT IPlayer
     {
         public:
-            virtual ~Player();
+            virtual ~IPlayer();
     };
 }
 

@@ -7,6 +7,7 @@
   * ************************************************/
 #ifndef FPLAYER_DESKETOP_FVIDEOVIEW_H
 #define FPLAYER_DESKETOP_FVIDEOVIEW_H
+#include <fplayer/api/media/ifvideoview.h>
 #include <QWidget>
 #include <fplayer/widget/export.h>
 
@@ -14,14 +15,16 @@ class QVideoSink;
 
 namespace fplayer
 {
-	class FPLAYER_WIDGET_EXPORT FVideoView : public QWidget
+	class FPLAYER_WIDGET_EXPORT FVideoView : public QWidget, public IFVideoView
 	{
 		Q_OBJECT
+
 	public:
 		explicit FVideoView(QWidget* parent = nullptr);
 		~FVideoView() override;
 
-		QVideoSink* videoSink() const;// 给 Qt6 backend 用
+		// QVideoSink* videoSink() const;// 给 Qt6 backend 用
+		PreviewTarget previewTarget() const override;
 
 	protected:
 		void showEvent(QShowEvent* e) override;// 确保 winId 可用

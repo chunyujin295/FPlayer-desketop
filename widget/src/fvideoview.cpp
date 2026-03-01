@@ -12,9 +12,27 @@ fplayer::FVideoView::FVideoView(QWidget* parent) : QWidget(parent)
 
 fplayer::FVideoView::~FVideoView() = default;
 
-QVideoSink* fplayer::FVideoView::videoSink() const
+// QVideoSink* fplayer::FVideoView::videoSink() const
+// {
+// 	return m_sink;
+// }
+
+fplayer::PreviewTarget fplayer::FVideoView::previewTarget() const
 {
-	return m_sink;
+	PreviewTarget t{};
+
+#ifdef _WIN32
+	t.window.hwnd = reinterpret_cast<void*>(winId());
+#else
+	t.window.handle = reinterpret_cast<void*>(winId());
+#endif
+	t.window.width = width();
+	t.window.height = height();
+	t.window.device_pixel_ratio = devicePixelRatioF();
+
+	// Qt6 backend 用
+	t.backend_hint = static_cast<void*>(m_sink);
+	return t;
 }
 
 void fplayer::FVideoView::showEvent(QShowEvent* e)

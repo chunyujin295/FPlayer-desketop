@@ -8,6 +8,7 @@
   * ************************************************/
 #ifndef FPLAYER_DESKETOP_SERVICE_H
 #define FPLAYER_DESKETOP_SERVICE_H
+#include <fplayer/api/media/ifvideoview.h>
 #include <fplayer/service/export.h>
 #include <fplayer/runtime/runtime.h>
 
@@ -26,9 +27,9 @@ namespace fplayer
 
 		/**
 		 * 初始化摄像头视频播放窗口
-		 * @param widget
+		 * @param videoView
 		 */
-		void bindCameraPreview(fplayer::FVideoView* widget);// TODO service层不能调用widget层
+		void bindCameraPreview(fplayer::IFVideoView* videoView);
 
 		QList<QString> getCameraList() const;
 
@@ -40,7 +41,7 @@ namespace fplayer
 
 	private:
 		fplayer::RunTime* m_runtime;
-		std::shared_ptr<fplayer::Camera> m_camera;
+		std::shared_ptr<fplayer::ICamera> m_camera;
 		int m_cameraIndex;// 摄像头索引
 	};
 }

@@ -11,20 +11,20 @@
 
 
 #include <memory>
-#include <fplayer/api/media/camera.h>
+#include <fplayer/api/media/icamera.h>
 #include <fplayer/api/media/previewtarget.h>
 #include <fplayer/runtime/export.h>
 
 namespace fplayer
 {
-	class RunTime
+	class FPLAYER_RUNTIME_EXPORT RunTime
 	{
 	public:
-		std::shared_ptr<Camera> FPLAYER_RUNTIME_EXPORT createCamera(MediaBackendType backend);
-		void bindCameraPreview(const PreviewTarget& target);
+		std::shared_ptr<ICamera> createCamera(MediaBackendType backend);
+		void bindCameraPreview(const fplayer::PreviewTarget& target);
 
 	private:
-		std::shared_ptr<Camera> m_camera;
+		std::shared_ptr<ICamera> m_camera;
 	};
 
 
