@@ -34,6 +34,7 @@ CaptureWindow::CaptureWindow(QWidget* parent)
 	this->ui->cmbDevices->addItems(list);
 
 	// 4) 连接信号槽
+	// 摄像头变更
 	connect(this->ui->cmbDevices, &QComboBox::currentIndexChanged, [this](int index) {
 		this->m_service->selectCamera(index);
 		QStringList formats(this->m_service->getCameraFormats(index));
@@ -42,11 +43,11 @@ CaptureWindow::CaptureWindow(QWidget* parent)
 		this->ui->cmbFormats->setCurrentIndex(0);
 	});
 
+	// 摄像头格式变更
 	connect(this->ui->cmbFormats, &QComboBox::currentIndexChanged, [this](int index) {
 		this->m_service->selectCameraFormat(index);
 	});
 
-	// TODO 缺少摄像头格式变更的槽，以及对应调整摄像头格式的backend方法
 
 	// 5) 选择第一个摄像头（此时预览已经设置好了）
 	if (!list.isEmpty())
@@ -60,52 +61,6 @@ CaptureWindow::CaptureWindow(QWidget* parent)
 		this->m_service->selectCameraFormat(0);
 	}
 }
-
-// void CaptureWindow::refreshCameras()
-// {
-// 	const auto def = QMediaDevices::defaultVideoInput();
-// 	qDebug() << "defaultVideoInput isNull =" << def.isNull()
-// 			<< "desc =" << def.description()
-// 			<< "id =" << def.id();
-//
-// 	m_devices = QMediaDevices::videoInputs();
-//
-// 	qDebug() << "Cameras found:" << m_devices.size();
-// 	for (int i = 0; i < m_devices.size(); ++i)
-// 	{
-// 		const auto& d = m_devices[i];
-// 		qDebug() << "[" << i << "]" << d.description() << d.id();
-// 	}
-// }
-//
-// bool CaptureWindow::selectCamera(int index)
-// {
-// 	if (index < 0 || index >= m_devices.size())
-// 	{
-// 		qWarning() << "selectCamera invalid index:" << index;
-// 		return false;
-// 	}
-//
-// 	if (m_camera)
-// 	{
-// 		m_camera->stop();
-// 		m_camera->deleteLater();
-// 		m_camera = nullptr;
-// 	}
-//
-// 	m_camera = new QCamera(m_devices[index], this);
-//
-// 	connect(m_camera, &QCamera::errorOccurred, this,
-// 	        [](QCamera::Error e, const QString& s) {
-// 		        qWarning() << "Camera error:" << e << s;
-// 	        });
-//
-// 	m_session->setCamera(m_camera);
-// 	m_camera->start();
-//
-// 	qDebug() << "Selected camera:" << index << m_devices[index].description();
-// 	return true;
-// }
 
 CaptureWindow::~CaptureWindow()
 {
