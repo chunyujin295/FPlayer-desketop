@@ -42,16 +42,16 @@ public:
 
 	~CaptureWindow() override;
 
-private:
-	void refreshCameras();
-	bool selectCamera(int index);
+// private:
+// 	void refreshCameras();
+// 	bool selectCamera(int index);
 
 private:
 	Ui::CaptureWindow* ui;
-	QVideoWidget* m_view = nullptr;
-	QMediaCaptureSession* m_session = nullptr;
-	QCamera* m_camera = nullptr;
-	QList<QCameraDevice> m_devices;
+	// QVideoWidget* m_view = nullptr;
+	// QMediaCaptureSession* m_session = nullptr;
+	// QCamera* m_camera = nullptr;
+	// QList<QCameraDevice> m_devices;
 
 	fplayer::Service* m_service = nullptr;
 };

@@ -4,18 +4,17 @@
 #include <QCameraDevice>
 #include <QDebug>
 #include <QCamera>
+#include <QVideoWidget>
 
 namespace fplayer
 {
 	struct CameraQt6::Impl
 	{
-		QMediaCaptureSession* session = nullptr;
 		QList<QCameraDevice> devices;
 		QCamera* camera = nullptr;
 	};
 
-	CameraQt6::CameraQt6() :
-		m_d(std::make_unique<Impl>())
+	CameraQt6::CameraQt6() : m_d(std::make_unique<Impl>())
 	{
 		m_backend = MediaBackendType::Qt6;
 	}
@@ -44,10 +43,11 @@ namespace fplayer
 			        qWarning() << "Camera error:" << e << s;
 		        });
 
-		m_d->session->setCamera(m_d->camera);
+		m_session.setCamera(m_d->camera);
 		m_d->camera->start();
 
 		qDebug() << "Selected camera:" << index << m_d->devices[index].description();
+		m_cameraIndex = index;
 		return true;
 	}
 
@@ -91,7 +91,6 @@ namespace fplayer
 							<< format;
 					cameraDescriptions.formats.push_back(format);
 				}
-
 			}
 			m_descriptions.push_back({dev.description(), dev.id(), 0, cameraDescriptions.formats});
 		}
@@ -121,7 +120,7 @@ namespace fplayer
 
 	void CameraQt6::setPreviewTarget(const PreviewTarget& target)
 	{
-		auto* sink = static_cast<QVideoSink*>(target.backend_hint);
-		m_session.setVideoSink(sink);
+		auto* qtVideoWidget = static_cast<QVideoWidget*>(target.backend_hint);
+		m_session.setVideoOutput(qtVideoWidget);
 	}
 }// fplayer

@@ -1,4 +1,6 @@
 #include <fplayer/widget/fvideoview.h>
+#include <QVBoxLayout>
+#include <QVideoWidget>
 #include <QtMultimedia/QVideoSink>
 
 fplayer::FVideoView::FVideoView(QWidget* parent) : QWidget(parent)
@@ -6,8 +8,12 @@ fplayer::FVideoView::FVideoView(QWidget* parent) : QWidget(parent)
 	// 让这个控件有原生窗口句柄（FFmpeg/SDL/D3D 渲染需要）
 	setAttribute(Qt::WA_NativeWindow, true);
 
-	// Qt6 视频输出走 sink
-	m_sink = new QVideoSink(this);
+	// Qt6 视频输出
+	auto lay = new QVBoxLayout(this);
+	lay->setContentsMargins(0,0,0,0);
+	lay->setSpacing(0);
+	m_qtVideoWidget = new QVideoWidget(this);
+	lay->addWidget(m_qtVideoWidget);
 }
 
 fplayer::FVideoView::~FVideoView() = default;
@@ -31,7 +37,7 @@ fplayer::PreviewTarget fplayer::FVideoView::previewTarget() const
 	t.window.device_pixel_ratio = devicePixelRatioF();
 
 	// Qt6 backend 用
-	t.backend_hint = static_cast<void*>(m_sink);
+	t.backend_hint = static_cast<void*>(m_qtVideoWidget);
 	return t;
 }
 

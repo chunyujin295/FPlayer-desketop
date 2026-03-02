@@ -42,6 +42,15 @@ void fplayer::Service::bindCameraPreview(fplayer::IFVideoView* videoView)
 	// }
 }
 
+void fplayer::Service::selectCamera(int index)
+{
+	m_cameraIndex = -1;
+	if (m_camera->selectCamera(index))
+	{
+		m_cameraIndex = index;
+	}
+}
+
 QList<QString> fplayer::Service::getCameraList() const
 {
 	QList<QString> cameraList;

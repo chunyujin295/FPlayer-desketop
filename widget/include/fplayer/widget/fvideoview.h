@@ -11,6 +11,7 @@
 #include <QWidget>
 #include <fplayer/widget/export.h>
 
+class QVideoWidget;
 class QVideoSink;
 
 namespace fplayer
@@ -35,7 +36,7 @@ namespace fplayer
 		void viewResized(int w, int h, double dpr);
 
 	private:
-		QVideoSink* m_sink = nullptr;
+		QVideoWidget* m_qtVideoWidget = nullptr;
 	};
 }
 
