@@ -1,9 +1,7 @@
 #include <fplayer/service/service.h>
 
 #include <QtMultimediaWidgets/QVideoWidget>
-#include <QtWidgets/QVBoxLayout>
 #include <fplayer/common/maplist/maplist.hpp>
-
 #include <logger/logger.h>
 
 fplayer::Service::Service() : m_runtime(new RunTime()), m_cameraIndex(0)

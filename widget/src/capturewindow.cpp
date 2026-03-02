@@ -37,6 +37,7 @@ CaptureWindow::CaptureWindow(QWidget* parent)
 	connect(this->ui->cmbDevices, &QComboBox::currentIndexChanged, [this](int index) {
 		this->m_service->selectCamera(index);
 		QStringList formats(this->m_service->getCameraFormats(index));
+		this->ui->cmbFormats->clear();
 		this->ui->cmbFormats->addItems(formats);
 		this->ui->cmbFormats->setCurrentIndex(0);
 	});
