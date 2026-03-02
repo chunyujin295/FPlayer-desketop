@@ -31,7 +31,9 @@ namespace fplayer
 		 */
 		void bindCameraPreview(fplayer::IFVideoView* videoView);
 
-			void selectCamera(int index);
+		void selectCamera(int index);
+
+		void selectCameraFormat(int index);
 
 		QList<QString> getCameraList() const;
 

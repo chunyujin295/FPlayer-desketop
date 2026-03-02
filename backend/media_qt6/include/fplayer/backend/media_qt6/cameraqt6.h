@@ -15,36 +15,42 @@
 #include <QObject>
 #include <QString>
 
+class QCameraFormat;
+
 namespace fplayer
 {
-    class FPLAYER_BACKEND_MEDIA_QT6_EXPORT CameraQt6 : public QObject, public ICamera // QObject的继承必须放在第一位
-    {
-            Q_OBJECT
+	class FPLAYER_BACKEND_MEDIA_QT6_EXPORT CameraQt6 : public QObject, public ICamera// QObject的继承必须放在第一位
+	{
+		Q_OBJECT
 
-        public:
-            CameraQt6();
+	public:
+		CameraQt6();
 
-            ~CameraQt6() override;
+		~CameraQt6() override;
 
-            bool selectCamera(int index) override;
+		bool selectCamera(int index) override;
 
-            void refreshCameras() override;
+		bool selectCameraFormat(int index) override;
 
-            QList<CameraDescription> getDescriptions() override;
+		void refreshCameras() override;
 
-            int getIndex() override;
+		QList<CameraDescription> getDescriptions() override;
 
-            void pause() override;
+		int getIndex() override;
 
-            void resume() override;
+		void pause() override;
 
-            void setPreviewTarget(const PreviewTarget& target) override;
+		void resume() override;
 
-        private:
-            struct Impl;
-            std::unique_ptr<Impl> m_d;
-            QMediaCaptureSession m_session;
-    };
-} // fplayer
+		void setPreviewTarget(const PreviewTarget& target) override;
+
+	private:
+		struct Impl;
+		QList<QCameraDevice> m_devices;
+		QCamera* m_camera;
+		QMediaCaptureSession m_session;
+		QVector<QList<QCameraFormat>> m_qtCameraFormats;// 存储各个摄像头的Qt原始格式信息
+	};
+}// fplayer
 
 #endif //FPLAYER_DESKETOP_CAPTUREQT6_H

@@ -49,6 +49,14 @@ void fplayer::Service::selectCamera(int index)
 	}
 }
 
+void fplayer::Service::selectCameraFormat(int index)
+{
+	if (!m_camera->selectCameraFormat(index))
+	{
+		LOG_WARN("fplayer::Service::selectCameraFormat(int index) ==> 摄像头格式切换失败");
+	}
+}
+
 QList<QString> fplayer::Service::getCameraList() const
 {
 	QList<QString> cameraList;

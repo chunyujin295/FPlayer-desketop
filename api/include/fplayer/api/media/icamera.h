@@ -32,6 +32,8 @@ namespace fplayer
 
 		virtual bool selectCamera(int index) = 0;
 
+		virtual bool selectCameraFormat(int index) = 0;
+
 		virtual void refreshCameras() = 0;
 
 		virtual QList<CameraDescription> getDescriptions() = 0;
@@ -48,7 +50,7 @@ namespace fplayer
 
 	protected:
 		int m_cameraIndex = 0;
-		QList<CameraDescription> m_descriptions;// 当前摄像头信息
+		QList<CameraDescription> m_descriptions;// 摄像头信息列表
 		MediaBackendType m_backend = MediaBackendType::Qt6;
 	};
 }

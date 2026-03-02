@@ -42,6 +42,10 @@ CaptureWindow::CaptureWindow(QWidget* parent)
 		this->ui->cmbFormats->setCurrentIndex(0);
 	});
 
+	connect(this->ui->cmbFormats, &QComboBox::currentIndexChanged, [this](int index) {
+		this->m_service->selectCameraFormat(index);
+	});
+
 	// TODO 缺少摄像头格式变更的槽，以及对应调整摄像头格式的backend方法
 
 	// 5) 选择第一个摄像头（此时预览已经设置好了）
@@ -49,9 +53,11 @@ CaptureWindow::CaptureWindow(QWidget* parent)
 	{
 		this->ui->cmbDevices->setCurrentIndex(0);
 		this->m_service->selectCamera(0);
+
 		QStringList formats(this->m_service->getCameraFormats(0));
 		this->ui->cmbFormats->addItems(formats);
 		this->ui->cmbFormats->setCurrentIndex(0);
+		this->m_service->selectCameraFormat(0);
 	}
 }
 
