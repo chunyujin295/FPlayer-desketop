@@ -191,11 +191,11 @@ endfunction()
 function(qt_deploy_runtime target)
     if (NOT WIN32)
         return()
-    endif()
+    endif ()
 
     if (NOT TARGET ${target})
         message(FATAL_ERROR "qt_deploy_runtime: target '${target}' does not exist")
-    endif()
+    endif ()
 
     set(options)
     set(oneValueArgs DEST_DIR PLUGIN_DIR QML_DIR)
@@ -203,65 +203,87 @@ function(qt_deploy_runtime target)
     cmake_parse_arguments(QTDEPLOY
             "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
-    # 默认插件目录
+    # 默认插件输出目录
     if (NOT QTDEPLOY_PLUGIN_DIR)
         set(QTDEPLOY_PLUGIN_DIR "plugins")
-    endif()
+    endif ()
 
-    # 找到 windeployqt（通过 Qt6::qmake 推导 Qt bin 目录）
+    # 1) 定位 qmake 和 windeployqt
     get_target_property(_qmake_exe Qt6::qmake IMPORTED_LOCATION)
     if (NOT _qmake_exe)
         message(FATAL_ERROR "qt_deploy_runtime: cannot locate Qt6::qmake. Did you call find_package(Qt6 ...)?")
-    endif()
+    endif ()
     get_filename_component(_qt_bin_dir "${_qmake_exe}" DIRECTORY)
     set(_windeployqt "${_qt_bin_dir}/windeployqt.exe")
-
     if (NOT EXISTS "${_windeployqt}")
         message(FATAL_ERROR "qt_deploy_runtime: windeployqt not found at: ${_windeployqt}")
-    endif()
+    endif ()
 
-    # 部署目录：默认使用 exe 所在目录；也可指定 DEST_DIR
+    # 2) 获取 Qt 核心路径（修复：显式指定 MinGW 插件路径）
+    get_target_property(_qt_core_lib Qt6::Core IMPORTED_LOCATION)
+    get_filename_component(_qt_root_dir "${_qt_core_lib}" DIRECTORY)
+    get_filename_component(_qt_root_dir "${_qt_root_dir}" DIRECTORY) # 上一级到 Qt 安装根目录
+
+    # 显式指定 MinGW 平台插件路径（关键修复）
+    set(_qt_platform_plugin_dir "${_qt_root_dir}/plugins/platforms")
+    if (NOT EXISTS "${_qt_platform_plugin_dir}")
+        message(FATAL_ERROR "Qt platforms plugin dir not found: ${_qt_platform_plugin_dir}")
+    endif ()
+
+    # 3) 部署目录配置
+    set(_work_dir "$<TARGET_FILE_DIR:${target}>")
+    set(_dir_arg)
     if (QTDEPLOY_DEST_DIR)
-        set(_dest_dir "${QTDEPLOY_DEST_DIR}")
-        # WORKING_DIRECTORY 必须是实际目录（生成表达式可以用在命令里，但这里也支持）
-        # 我们把 workdir 统一设为目标exe目录，命令里用 --dir 指到 DEST_DIR（更稳）
-        set(_work_dir "$<TARGET_FILE_DIR:${target}>")
-        set(_dir_arg --dir "${_dest_dir}")
-    else()
-        set(_work_dir "$<TARGET_FILE_DIR:${target}>")
-        set(_dir_arg) # 不传 --dir，则默认部署到 exe 同级
-    endif()
+        set(_dir_arg --dir "${QTDEPLOY_DEST_DIR}")
+    endif ()
 
-    # QML：可选
+    # 4) QML 配置（可选）
     set(_qml_arg)
     if (QTDEPLOY_QML_DIR)
         set(_qml_arg --qmldir "${QTDEPLOY_QML_DIR}")
-    endif()
+    endif ()
 
-    # Debug/Release 自动参数
-    # - Debug: --debug
-    # - 其他: --release（你也可以不加，但加上更明确）
-    set(_cfg_arg $<$<CONFIG:Debug>:--debug>$<$<NOT:$<CONFIG:Debug>>:--release>)
+    # 5) Debug/Release 配置
+    if (MSVC)
+        set(_cfg_arg $<$<CONFIG:Debug>:--debug>$<$<NOT:$<CONFIG:Debug>>:--release>)
+    else ()
+        set(_cfg_arg) # MinGW: 不强制 --debug/--release
+    endif ()
 
-    # 兜底：qwindows 插件路径（按 config 自动选择 d 后缀）
-    set(_qwindows_src
-            "$<$<CONFIG:Debug>:${_qt_plugins_dir}/platforms/qwindowsd.dll>$<$<NOT:$<CONFIG:Debug>>:${_qt_plugins_dir}/platforms/qwindows.dll>"
-    )
-    set(_qwindows_dst_dir "${_deploy_root}/${QTDEPLOY_PLUGIN_DIR}/platforms")
-
-    # 组装命令
+    # 6) 修复：增强环境变量 + 显式指定平台插件路径
+    # 核心改进：
+    # - 同时设置 QT_PLUGIN_PATH 和 QT_QPA_PLATFORM_PLUGIN_PATH
+    # - 强制包含 platforms 插件目录
+    # - 增加 --verbose 便于调试
     add_custom_command(TARGET ${target} POST_BUILD
-            COMMAND "${_windeployqt}"
+            COMMAND "${CMAKE_COMMAND}" -E env
+            # 双重保险：设置平台插件专用环境变量
+            "QT_PLUGIN_PATH=${_qt_platform_plugin_dir};${_qt_root_dir}/plugins"
+            "QT_QPA_PLATFORM_PLUGIN_PATH=${_qt_platform_plugin_dir}"
+            # 执行 windeployqt，增加 --verbose 便于调试
+            "${_windeployqt}"
             ${_cfg_arg}
             ${_dir_arg}
             --plugindir "${QTDEPLOY_PLUGIN_DIR}"
+            --verbose 2  # 输出详细日志，便于排查问题
+            --no-compiler-runtime  # 避免重复部署编译器运行时（MinGW 不需要）
             ${_qml_arg}
             ${QTDEPLOY_EXTRA_ARGS}
             "$<TARGET_FILE:${target}>"
+            # 额外步骤：手动复制 platforms 插件（兜底方案）
+            COMMAND "${CMAKE_COMMAND}" -E copy_directory
+            "${_qt_platform_plugin_dir}"
+            "${_work_dir}/${QTDEPLOY_PLUGIN_DIR}/platforms"
             WORKING_DIRECTORY "${_work_dir}"
             COMMENT "Deploying Qt runtime for target '${target}' via windeployqt..."
             VERBATIM
     )
+
+    # 输出调试信息，帮助确认路径是否正确
+    message(STATUS "Qt deploy config for ${target}:")
+    message(STATUS "  Qt root dir: ${_qt_root_dir}")
+    message(STATUS "  Platform plugin dir: ${_qt_platform_plugin_dir}")
+    message(STATUS "  Target exe path: $<TARGET_FILE:${target}>")
 endfunction()
 
 
@@ -280,10 +302,10 @@ endfunction()
 function(qt_install_deploy_windeployqt target)
     if (NOT WIN32)
         return()
-    endif()
+    endif ()
     if (NOT TARGET ${target})
         message(FATAL_ERROR "qt_install_deploy_windeployqt: target '${target}' does not exist")
-    endif()
+    endif ()
 
     set(options)
     set(oneValueArgs PLUGIN_DIR_NAME)
@@ -293,13 +315,13 @@ function(qt_install_deploy_windeployqt target)
 
     if (NOT QTINST_PLUGIN_DIR_NAME)
         set(QTINST_PLUGIN_DIR_NAME "plugins")
-    endif()
+    endif ()
 
     # 找 windeployqt
     get_target_property(_qmake_exe Qt6::qmake IMPORTED_LOCATION)
     if (NOT _qmake_exe)
         message(FATAL_ERROR "qt_install_deploy_windeployqt: Qt6::qmake not found. Call find_package(Qt6 ...) first.")
-    endif()
+    endif ()
     get_filename_component(_qt_bin_dir "${_qmake_exe}" DIRECTORY)
     set(_windeployqt "${_qt_bin_dir}/windeployqt.exe")
 
