@@ -6,3 +6,24 @@ CPMAddPackage(
         GIT_REPOSITORY git@github.com:chunyujin295/Logger.git
         GIT_TAG v1.1.1
 )
+
+# ffmpeg
+set(THIRD_PART_ROOT "${CMAKE_SOURCE_DIR}/3rdparty")
+set(FFMPEG_DIR "${THIRD_PART_ROOT}/ffmpeg_v8.0.1")
+set(FFMPEG_HEADER "${FFMPEG_DIR}/include")
+
+if (WIN32)
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+        message(STATUS "Using MSVC")
+        set(FFMPEG_LIBRARIES "${FFMPEG_DIR}/lib/msvc-64")
+    elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        message(STATUS "Using MinGW (GNU)")
+        set(FFMPEG_LIBRARIES "${FFMPEG_DIR}/lib/mingw-64")
+    endif ()
+
+    file(GLOB FFMPEG_DLL_FILES ${FFMPEG_LIBRARIES}/*.dll)
+    foreach (file ${FFMPEG_DLL_FILES})
+        file(COPY ${file} DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+    endforeach ()
+elseif (UNIX)
+endif ()
