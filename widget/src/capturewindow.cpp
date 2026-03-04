@@ -11,6 +11,7 @@
 #include <QMediaDevices>
 #include <logger/logger.h>
 #include <QDebug>
+#include <qicon.h>
 
 CaptureWindow::CaptureWindow(QWidget* parent)
 	: QWidget(parent)
@@ -60,6 +61,19 @@ CaptureWindow::CaptureWindow(QWidget* parent)
 		this->ui->cmbFormats->setCurrentIndex(0);
 		this->m_service->selectCameraFormat(0);
 	}
+
+	connect(this->ui->btnPlay, &QPushButton::clicked, [this]() {
+		if (this->m_service->cameraIsPlaying())
+		{
+			this->m_service->cameraPause();
+			this->ui->btnPlay->setIcon(QIcon::fromTheme(QIcon::ThemeIcon::MediaPlaybackStart));
+		}
+		else
+		{
+			this->m_service->cameraResume();
+			this->ui->btnPlay->setIcon(QIcon::fromTheme(QIcon::ThemeIcon::MediaPlaybackPause));
+		}
+	});
 }
 
 CaptureWindow::~CaptureWindow()

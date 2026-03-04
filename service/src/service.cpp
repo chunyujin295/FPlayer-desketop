@@ -88,6 +88,21 @@ QList<QString> fplayer::Service::getCameraFormats(int index) const
 	return cameraDescriptions.at(index).formats;
 }
 
+void fplayer::Service::cameraPause()
+{
+	this->m_camera->pause();
+}
+
+void fplayer::Service::cameraResume()
+{
+	this->m_camera->resume();
+}
+
+bool fplayer::Service::cameraIsPlaying()
+{
+	return this->m_camera->isPlaying();
+}
+
 // void fplayer::Service::bindCameraPreviewQt6(QWidget* widget)
 // {
 // 	PreviewTarget target;

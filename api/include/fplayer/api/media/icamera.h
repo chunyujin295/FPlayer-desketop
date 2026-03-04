@@ -44,6 +44,8 @@ namespace fplayer
 
 		virtual void resume() = 0;
 
+		bool isPlaying() const;
+
 		virtual void setPreviewTarget(const PreviewTarget&) = 0;
 
 		MediaBackendType getBackendType() const;
@@ -52,6 +54,7 @@ namespace fplayer
 		int m_cameraIndex = 0;
 		QList<CameraDescription> m_descriptions;// 摄像头信息列表
 		MediaBackendType m_backend = MediaBackendType::Qt6;
+		bool m_isPlaying = false;
 	};
 }
 

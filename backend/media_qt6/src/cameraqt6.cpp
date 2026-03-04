@@ -65,7 +65,10 @@ namespace fplayer
 		auto fmt = m_qtCameraFormats.at(m_cameraIndex).at(index);
 		this->m_camera->stop();
 		this->m_camera->setCameraFormat(fmt);
-		this->m_camera->start();
+		if (m_isPlaying)
+		{
+			this->m_camera->start();
+		}
 
 		qDebug() << "Applied camera format:"
 				<< "cam=" << m_cameraIndex
@@ -143,10 +146,14 @@ namespace fplayer
 
 	void CameraQt6::pause()
 	{
+		m_camera->stop();
+		m_isPlaying = false;
 	}
 
 	void CameraQt6::resume()
 	{
+		m_camera->start();
+		m_isPlaying = true;
 	}
 
 	void CameraQt6::setPreviewTarget(const PreviewTarget& target)

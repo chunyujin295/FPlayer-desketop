@@ -39,6 +39,12 @@ namespace fplayer
 
 		QList<QString> getCameraFormats(int index) const;
 
+		void cameraPause();
+
+		void cameraResume();
+
+		bool cameraIsPlaying();
+
 	private:
 		// void bindCameraPreviewQt6(QWidget* widget);
 		// void bindCameraPreviewFFmpeg(QWidget* widget);

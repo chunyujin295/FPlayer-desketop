@@ -42,9 +42,9 @@ public:
 
 	~CaptureWindow() override;
 
-// private:
-// 	void refreshCameras();
-// 	bool selectCamera(int index);
+	// private:
+	// 	void refreshCameras();
+	// 	bool selectCamera(int index);
 
 private:
 	Ui::CaptureWindow* ui;
