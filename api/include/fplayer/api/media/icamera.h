@@ -44,7 +44,7 @@ namespace fplayer
 
 		virtual void resume() = 0;
 
-		bool isPlaying() const;
+		virtual bool isPlaying() const;
 
 		virtual void setPreviewTarget(const PreviewTarget&) = 0;
 

@@ -1,13 +1,14 @@
 project(FPlayer_Backend_Media_FFmpeg)
 
-find_package(Qt6 COMPONENTS Core REQUIRED)
+find_package(Qt6 COMPONENTS Core Widgets REQUIRED)
 
 add_standard_module(${PROJECT_NAME} include/fplayer/backend/media_ffmpeg ON ON)
 
-target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Core)
+target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Core Qt6::Widgets)
 target_link_libraries(${PROJECT_NAME} PUBLIC FPlayer_Api)
 target_link_libraries(${PROJECT_NAME} PRIVATE Logger)
 target_link_directories(${PROJECT_NAME} PRIVATE ${FFMPEG_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} PRIVATE avdevice avfilter avformat avcodec swscale swresample avutil)
 target_include_directories(${PROJECT_NAME} PUBLIC ${FFMPEG_HEADER})
 
 # 设置安装项目

@@ -1,15 +1,19 @@
 #include <fplayer/runtime/runtime.h>
+
+#include <fplayer/backend/media_ffmpeg/cameraffmpeg.h>
+
 #include <fplayer/backend/media_qt6/cameraqt6.h>
 
 std::shared_ptr<fplayer::ICamera> fplayer::RunTime::createCamera(MediaBackendType backend)
 {
 	m_camera.reset();
-	// switch (backend) {
-	//     case MediaBackend::Qt6:
-	m_camera = std::make_shared<fplayer::CameraQt6>();
-	// case MediaBackend::FFmpeg:
-	//     return std::make_unique<PlayerFFmpeg>();
-	// }
+	switch (backend)
+	{
+	case MediaBackendType::Qt6:
+		m_camera = std::make_shared<fplayer::CameraQt6>();
+	case MediaBackendType::FFmpeg:
+		return std::make_unique<CameraFFmpeg>();
+	}
 	return m_camera;
 }
 

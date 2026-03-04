@@ -23,7 +23,7 @@ CaptureWindow::CaptureWindow(QWidget* parent)
 	auto container = ui->wgtView;
 
 	// 1) 初始化摄像头
-	m_service->initCamera(fplayer::MediaBackendType::Qt6);
+	m_service->initCamera(fplayer::MediaBackendType::FFmpeg);
 
 	// 2) 绑定预览窗口
 	m_service->bindCameraPreview(this->ui->wgtView);
