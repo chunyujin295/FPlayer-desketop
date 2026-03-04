@@ -49,7 +49,7 @@
 #   include "intmath.h"
 #   include "internal.h"
 #else
-#include "mem.h"
+#   include "mem.h"
 #endif /* HAVE_AV_CONFIG_H */
 
 //rounded division & shift
