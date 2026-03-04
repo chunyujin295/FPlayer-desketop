@@ -1,9 +1,11 @@
-#include <fplayer/backend/media_ffmpeg/cameraffmpeg.h>
 #include <QDebug>
 #include <QThread>
 #include <QPainter>
 #include <QImage>
 #include <QWidget>
+
+#include <fplayer/backend/media_ffmpeg/cameraffmpeg.h>
+#include <logger/logger.h>
 
 // FFmpeg 设备相关头文件
 extern "C" {
@@ -12,6 +14,60 @@ extern "C" {
 
 namespace fplayer
 {
+	// 可选：为线程安全做准备
+	static std::mutex log_mutex;
+
+	static void loggerCallback(void* ptr, int level, const char* fmt, va_list vargs)
+	{
+		// 过滤等级（关键）
+		if (level > av_log_get_level())
+		{
+			return;
+		}
+		static char message[2048];
+		std::lock_guard<std::mutex> lock(log_mutex);
+
+		vsnprintf(message, sizeof(message), fmt, vargs);
+
+		// 可选：过滤掉结尾的换行
+		std::string str(message);
+		if (!str.empty() && str.back() == '\n')
+		{
+			str.pop_back();
+		}
+
+		// 将 FFmpeg 的日志级别转换为你自己的日志级别
+		if (level <= AV_LOG_PANIC || level == AV_LOG_FATAL)
+		{
+			LOG_CRITI("[ffmpeg]", str);
+		}
+		else if (level <= AV_LOG_ERROR)
+		{
+			LOG_ERROR("[ffmpeg]", str);
+		}
+		else if (level <= AV_LOG_WARNING)
+		{
+			LOG_WARN("[ffmpeg]", str);
+		}
+		else if (level <= AV_LOG_INFO)
+		{
+			LOG_INFO("[ffmpeg]", str);
+		}
+		else if (level <= AV_LOG_VERBOSE)
+		{
+			LOG_DEBUG("[ffmpeg]", str);
+		}
+		else if (level <= AV_LOG_DEBUG)
+		{
+			LOG_DEBUG("[ffmpeg]", str);
+		}
+		else
+		{
+			LOG_TRACE("[ffmpeg]", str);
+		}
+	}
+
+
 	struct CameraFFmpeg::Impl
 	{
 		AVFormatContext* formatContext = nullptr;
@@ -84,6 +140,9 @@ namespace fplayer
 		m_backend = MediaBackendType::FFmpeg;
 		// 注册 FFmpeg 设备
 		avdevice_register_all();
+
+		av_log_set_level(AV_LOG_FATAL);
+		av_log_set_callback(loggerCallback);// 指定ffmpeg日志输出到logger
 	}
 
 	CameraFFmpeg::~CameraFFmpeg()
@@ -133,7 +192,7 @@ namespace fplayer
 				desc.formats = deviceInfo.formats;
 				m_descriptions.append(desc);
 
-				qDebug() << "Found camera:" << desc.description << desc.id;
+				// qDebug() << "Found camera:" << desc.description << desc.id;
 			}
 		}
 
@@ -263,7 +322,7 @@ namespace fplayer
 		m_impl->captureThread->start();
 
 		m_cameraIndex = index;
-		qDebug() << "Selected camera:" << deviceInfo.name;
+		//qdebug() << "Selected camera:" << deviceInfo.name;
 		return true;
 	}
 
@@ -271,20 +330,20 @@ namespace fplayer
 	{
 		// 简化处理，这里只是返回 true
 		// 实际项目中需要根据索引设置不同的分辨率和帧率
-		qDebug() << "Selected camera format index:" << index;
+		//qdebug() << "Selected camera format index:" << index;
 		return true;
 	}
 
 	void CameraFFmpeg::pause()
 	{
 		m_impl->isPaused = true;
-		qDebug() << "Camera paused";
+		//qdebug() << "Camera paused";
 	}
 
 	void CameraFFmpeg::resume()
 	{
 		m_impl->isPaused = false;
-		qDebug() << "Camera resumed";
+		//qdebug() << "Camera resumed";
 	}
 
 	bool CameraFFmpeg::isPlaying() const
@@ -306,7 +365,7 @@ namespace fplayer
 			// 注意：这种方式在不同 Qt 版本中可能有差异
 			m_impl->renderWidget = QWidget::find(reinterpret_cast<WId>(target.window.hwnd));
 		}
-		qDebug() << "Preview target set, renderWidget:" << m_impl->renderWidget;
+		//qdebug() << "Preview target set, renderWidget:" << m_impl->renderWidget;
 	}
 
 	void CameraFFmpeg::captureLoop()
@@ -381,7 +440,7 @@ namespace fplayer
 					}
 					else
 					{
-						qDebug() << "Captured frame:" << frame->width << "x" << frame->height;
+						//qdebug() << "Captured frame:" << frame->width << "x" << frame->height;
 					}
 
 					av_frame_unref(frame);
