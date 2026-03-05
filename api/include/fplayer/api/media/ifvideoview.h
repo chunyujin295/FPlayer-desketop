@@ -15,7 +15,7 @@ namespace fplayer
 	class FPLAYER_API_EXPORT IFVideoView
 	{
 	public:
-		virtual ~IFVideoView();
+		virtual ~IFVideoView() = default;
 
 		virtual PreviewTarget previewTarget() const = 0;
 	};
