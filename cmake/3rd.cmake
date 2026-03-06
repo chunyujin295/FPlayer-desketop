@@ -4,7 +4,7 @@ set(SPDLOG_BUILD_SHARED ON CACHE BOOL "spdlog Build Shared Lib" FORCE) # 覆盖s
 CPMAddPackage(
         NAME Logger
         GIT_REPOSITORY git@github.com:chunyujin295/Logger.git
-        GIT_TAG v1.1.1
+        GIT_TAG v1.1.3
 )
 
 # ffmpeg
@@ -12,6 +12,7 @@ set(THIRD_PART_ROOT "${CMAKE_SOURCE_DIR}/3rd")
 set(FFMPEG_DIR "${THIRD_PART_ROOT}/ffmpeg_v8.0.1")
 set(FFMPEG_HEADER "${FFMPEG_DIR}/include")
 
+# 拷贝ffmepg库到build/bin下
 if (WIN32)
     if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
         message(STATUS "Using MSVC")

@@ -20,6 +20,7 @@ if (WIN32)
 endif ()
 target_include_directories(${PROJECT_NAME} PUBLIC ${FFMPEG_HEADER})
 
+
 # 设置安装项目
 install(TARGETS ${PROJECT_NAME}
         #        EXPORT CxiCommonPcTargets
@@ -30,3 +31,8 @@ install(TARGETS ${PROJECT_NAME}
 )
 
 install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+# 将ffmpeg依赖库添加到安装项目中
+if (WIN32)
+    install(DIRECTORY ${FFMPEG_DIR}/bin/win/ DESTINATION ${CMAKE_INSTALL_BINDIR})
+endif ()
