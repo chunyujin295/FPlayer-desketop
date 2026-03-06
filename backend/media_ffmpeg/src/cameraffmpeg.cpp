@@ -6,6 +6,7 @@
 
 #include <fplayer/backend/media_ffmpeg/cameraffmpeg.h>
 
+#include "fplayer/backend/media_ffmpeg/camerainfofetcher.h"
 #include "fplayer/backend/media_ffmpeg/fglwidget.h"
 
 #include <logger/logger.h>
@@ -156,50 +157,8 @@ namespace fplayer
 	void CameraFFmpeg::refreshCameras()
 	{
 		m_descriptions.clear();
-		m_impl->cameraDevices.clear();
 
-		// 使用 dshow 设备枚举摄像头
-		const AVInputFormat* inputFormat = av_find_input_format("dshow");
-		if (!inputFormat)
-		{
-			//qWarning() << "Failed to find dshow input format";
-			return;
-		}
-
-		AVDeviceInfoList* deviceList = nullptr;
-		int ret = avdevice_list_input_sources(inputFormat, nullptr, nullptr, &deviceList);
-		if (ret < 0)
-		{
-			//qWarning() << "Failed to list input sources:" << av_err2str(ret);
-			return;
-		}
-
-		for (int i = 0; i < deviceList->nb_devices; ++i)
-		{
-			AVDeviceInfo* device = deviceList->devices[i];
-			if (device)
-			{
-				Impl::CameraDeviceInfo deviceInfo;
-				deviceInfo.name = QString::fromUtf8(device->device_name);
-				deviceInfo.devicePath = QString::fromUtf8(device->device_description);
-
-				// 简化处理，假设每个摄像头有默认格式
-				deviceInfo.formats << "640x480 fps: 30";
-				deviceInfo.formats << "1280x720 fps: 30";
-
-				m_impl->cameraDevices.append(deviceInfo);
-
-				CameraDescription desc;
-				desc.description = deviceInfo.name;
-				desc.id = deviceInfo.devicePath;
-				desc.formats = deviceInfo.formats;
-				m_descriptions.append(desc);
-
-				// qDebug() << "Found camera:" << desc.description << desc.id;
-			}
-		}
-
-		avdevice_free_list_devices(&deviceList);
+		m_descriptions = CameraDescriptionFetcher::getDescriptions();
 	}
 
 	QList<CameraDescription> CameraFFmpeg::getDescriptions()

@@ -5,6 +5,8 @@
 #include <windows.h>
 #endif
 
+#include <logger/logger.h>
+
 #include <fplayer/widget/capturewindow.h>
 #include <fplayer/common/qtloggeradapter/qtloggeradapter.h>
 #include <fplayer/api/media/mediabackendtype.h>
@@ -36,9 +38,16 @@ int main(int argc, char* argv[])
 	int backendInt = parser.value("backend").toInt();
 	fplayer::MediaBackendType backendType;
 
-	switch(backendInt) {
-	case 0: backendType = fplayer::MediaBackendType::Qt6; break;
-	case 1: backendType = fplayer::MediaBackendType::FFmpeg; break;
+	switch (backendInt)
+	{
+	case 0:
+		backendType = fplayer::MediaBackendType::Qt6;
+		LOG_DEBUG("Using Qt6 backend");
+		break;
+	case 1:
+		backendType = fplayer::MediaBackendType::FFmpeg;
+		LOG_DEBUG("Using FFmpeg backend");
+		break;
 	default:
 		qCritical() << "Invalid backend type:" << backendInt;
 		return 1;
