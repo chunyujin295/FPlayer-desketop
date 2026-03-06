@@ -339,14 +339,23 @@ function(qt_install_deploy_windeployqt target)
     # 那就需要你把那个相对路径告诉函数（否则 CMake install 没法反推出）。
     set(_runtime_rel "${CMAKE_INSTALL_BINDIR}")
 
+    if (MSVC)
+        set(MY_CFG_ARG $<$<CONFIG:Debug>:--debug>$<$<NOT:$<CONFIG:Debug>>:--release>)
+    else ()
+        set(MY_CFG_ARG --release) # MinGW: 不强制 --debug/--release，但是与qt_deploy_runtime不同，
+        # 下面的install文本中，不允许空的值，因此只能用release
+    endif ()
+
     install(CODE "
         message(STATUS \"[deploy] Running windeployqt after install for target: ${target}\")
 
         set(_cfg \"\${CMAKE_INSTALL_CONFIG_NAME}\")
-        set(_cfg_arg \"--release\")
-        if (_cfg STREQUAL \"Debug\")
-            set(_cfg_arg \"--debug\")
-        endif()
+#        set(_cfg_arg \"--release\")
+#        if (_cfg STREQUAL \"Debug\")
+#            set(_cfg_arg \"--debug\")
+#        endif()
+
+        set(_cfg_arg \"${MY_CFG_ARG}\")
 
         set(_prefix \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}\")
         set(_exe_dir \"\${_prefix}/${_runtime_rel}\")

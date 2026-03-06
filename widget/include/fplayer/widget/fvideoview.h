@@ -7,9 +7,10 @@
   * ************************************************/
 #ifndef FPLAYER_DESKETOP_FVIDEOVIEW_H
 #define FPLAYER_DESKETOP_FVIDEOVIEW_H
-#include <fplayer/api/media/ifvideoview.h>
+
 #include <QWidget>
 #include <fplayer/widget/export.h>
+#include <fplayer/api/media/ifvideoview.h>
 
 class QVideoWidget;
 class QVideoSink;

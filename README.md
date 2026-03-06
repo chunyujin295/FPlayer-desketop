@@ -116,12 +116,15 @@ common
 
 ### 规则：
 
-- api 不依赖 backend
-- backend 不依赖 runtime
-- widget 不依赖 service、runtime
-- app 不依赖 backend
+- API层作为接口定义层，应该被所有需要使用这些接口的层依赖：
 
-只有 runtime 认识所有 backend
+  1. app层 ✅-（依赖widget，间接依赖api）， 解析命令行参数时使用枚举类型
+  2. widget层 ✅ - 使用接口类型（如 MediaBackendType 、 IFVideoView ）
+  3. service层 ✅ - 使用接口定义和类型
+  4. runtime层 ✅- （依赖backend，间接依赖api）
+  5. backend层 ✅ - 实现接口时需要包含接口头文件
+
+- 只有 runtime 认识所有 backend
 
 
 
@@ -142,14 +145,16 @@ graph TD
     APP --> WIDGET
     APP --> COMMON
     APP --> TOOLS
+  
     WIDGET --> COMMON
     WIDGET --> TOOLS
     WIDGET --> SERVICE
+    WIDGET --> API
     
     SERVICE --> RUNTIME
+    SERVICE --> API
 
     RUNTIME --> BACKEND
-    RUNTIME --> API
     RUNTIME --> COMMON
     RUNTIME --> TOOLS
 

@@ -9,14 +9,15 @@
 #ifndef FPLAYER_DESKETOP_CAPTUREWINDOW_H
 #define FPLAYER_DESKETOP_CAPTUREWINDOW_H
 
-#include "../../../../backend/media_qt6/include/fplayer/backend/media_qt6/playerqt6.h"
 
 #include <QWidget>
 #include <fplayer/widget/export.h>
+#include <fplayer/api/media/mediabackendtype.h>
 
 
 namespace fplayer
 {
+	enum class MediaBackendType;
 	class Service;
 }
 
@@ -38,7 +39,7 @@ class FPLAYER_WIDGET_EXPORT CaptureWindow : public QWidget
 	Q_OBJECT
 
 public:
-	explicit CaptureWindow(QWidget* parent = nullptr);
+	explicit CaptureWindow(QWidget* parent = nullptr, fplayer::MediaBackendType backendType = fplayer::MediaBackendType::Qt6);
 
 	~CaptureWindow() override;
 

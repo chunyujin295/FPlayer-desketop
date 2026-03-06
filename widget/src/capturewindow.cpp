@@ -13,17 +13,15 @@
 #include <QDebug>
 #include <qicon.h>
 
-CaptureWindow::CaptureWindow(QWidget* parent)
-	: QWidget(parent)
-	  , ui(new Ui::CaptureWindow)
+CaptureWindow::CaptureWindow(QWidget* parent, fplayer::MediaBackendType backendType) :
+	QWidget(parent),
+	ui(new Ui::CaptureWindow)
 {
 	ui->setupUi(this);
 	m_service = new fplayer::Service();
 
-	auto container = ui->wgtView;
-
 	// 1) 初始化摄像头
-	m_service->initCamera(fplayer::MediaBackendType::FFmpeg);
+	m_service->initCamera(backendType);
 
 	// 2) 绑定预览窗口
 	m_service->bindCameraPreview(this->ui->wgtView);
