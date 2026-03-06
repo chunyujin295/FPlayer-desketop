@@ -22,6 +22,7 @@ CaptureWindow::CaptureWindow(QWidget* parent, fplayer::MediaBackendType backendT
 
 	// 1) 初始化摄像头
 	m_service->initCamera(backendType);
+	this->ui->wgtView->setBackendType(backendType);
 
 	// 2) 绑定预览窗口
 	m_service->bindCameraPreview(this->ui->wgtView);

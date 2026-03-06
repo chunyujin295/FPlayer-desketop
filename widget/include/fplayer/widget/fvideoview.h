@@ -11,6 +11,7 @@
 #include <QWidget>
 #include <fplayer/widget/export.h>
 #include <fplayer/api/media/ifvideoview.h>
+#include <fplayer/api/media/ifglwidget.h>
 
 class QVideoWidget;
 class QVideoSink;
@@ -38,6 +39,7 @@ namespace fplayer
 
 	private:
 		QVideoWidget* m_qtVideoWidget = nullptr;
+		IFGLWidget* m_glWidget = nullptr;
 	};
 }
 

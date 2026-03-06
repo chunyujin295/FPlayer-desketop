@@ -1,10 +1,10 @@
 project(FPlayer_Api)
 
-find_package(Qt6 COMPONENTS Core REQUIRED)
+find_package(Qt6 COMPONENTS Core REQUIRED) #OpenGL OpenGLWidgets REQUIRED)
 
 add_standard_module(${PROJECT_NAME} include/fplayer/api ON ON)
 
-target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Core)
+target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Core)  # Qt6::OpenGL Qt6::OpenGLWidgets)
 target_link_libraries(${PROJECT_NAME} PRIVATE Logger)
 
 #qt_deploy_runtime(FPlayer_Core)

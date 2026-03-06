@@ -5,6 +5,9 @@
 #include <QWidget>
 
 #include <fplayer/backend/media_ffmpeg/cameraffmpeg.h>
+
+#include "fplayer/backend/media_ffmpeg/fglwidget.h"
+
 #include <logger/logger.h>
 
 // FFmpeg 设备相关头文件
@@ -80,7 +83,7 @@ namespace fplayer
 		bool isCapturing = false;
 		bool isPaused = false;
 		PreviewTarget previewTarget;
-		QWidget* renderWidget = nullptr;
+		FGLWidget* fGLWieget = nullptr;
 
 		// 用于存储摄像头设备信息
 		struct CameraDeviceInfo
@@ -357,14 +360,14 @@ namespace fplayer
 		// 获取渲染窗口
 		if (target.backend_hint)
 		{
-			m_impl->renderWidget = static_cast<QWidget*>(target.backend_hint);
+			m_impl->fGLWieget = static_cast<FGLWidget*>(target.backend_hint);
 		}
-		else if (target.window.hwnd)
-		{
-			// 尝试通过 HWND 获取 QWidget
-			// 注意：这种方式在不同 Qt 版本中可能有差异
-			m_impl->renderWidget = QWidget::find(reinterpret_cast<WId>(target.window.hwnd));
-		}
+		// else if (target.window.hwnd)
+		// {
+		// 	// 尝试通过 HWND 获取 QWidget
+		// 	// 注意：这种方式在不同 Qt 版本中可能有差异
+		// 	m_impl->renderWidget = QWidget::find(reinterpret_cast<WId>(target.window.hwnd));
+		// }
 		//qdebug() << "Preview target set, renderWidget:" << m_impl->renderWidget;
 	}
 
@@ -432,11 +435,11 @@ namespace fplayer
 					          frame->height, rgbFrame->data, rgbFrame->linesize);
 
 					// 将 RGB 数据渲染到 Qt 窗口
-					if (m_impl->renderWidget && m_impl->renderWidget->isVisible())
+					if (m_impl->fGLWieget && m_impl->fGLWieget->isVisible())
 					{
 						QImage image(m_impl->frameBuffer, frame->width, frame->height, QImage::Format_RGB888);
-						QPainter painter(m_impl->renderWidget);
-						painter.drawImage(0, 0, image.scaled(m_impl->renderWidget->size()));
+						QPainter painter(m_impl->fGLWieget);
+						painter.drawImage(0, 0, image.scaled(m_impl->fGLWieget->size()));
 					}
 					else
 					{

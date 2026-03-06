@@ -10,7 +10,7 @@ fplayer::FVideoView::FVideoView(QWidget* parent) : QWidget(parent)
 
 	// Qt6 视频输出
 	auto lay = new QVBoxLayout(this);
-	lay->setContentsMargins(0,0,0,0);
+	lay->setContentsMargins(0, 0, 0, 0);
 	lay->setSpacing(0);
 	m_qtVideoWidget = new QVideoWidget(this);
 	lay->addWidget(m_qtVideoWidget);
@@ -27,6 +27,7 @@ fplayer::PreviewTarget fplayer::FVideoView::previewTarget() const
 {
 	PreviewTarget t{};
 
+	// 下面的没什么大用
 #ifdef _WIN32
 	t.window.hwnd = reinterpret_cast<void*>(winId());
 #else
@@ -36,8 +37,20 @@ fplayer::PreviewTarget fplayer::FVideoView::previewTarget() const
 	t.window.height = height();
 	t.window.device_pixel_ratio = devicePixelRatioF();
 
-	// Qt6 backend 用
-	t.backend_hint = static_cast<void*>(m_qtVideoWidget);
+	// 真正有用的部分
+	switch (m_backendType)
+	{
+	case MediaBackendType::Qt6:
+		// Qt6 backend 用
+		t.backend_hint = static_cast<void*>(m_qtVideoWidget);
+		break;
+	case MediaBackendType::FFmpeg:
+		// FFmpeg backend 用
+		t.backend_hint = static_cast<void*>(m_glWidget);
+		break;
+	default:
+		break;
+	}
 	return t;
 }
 
