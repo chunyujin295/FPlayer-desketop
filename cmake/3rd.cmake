@@ -4,7 +4,7 @@ set(SPDLOG_BUILD_SHARED ON CACHE BOOL "spdlog Build Shared Lib" FORCE) # 覆盖s
 CPMAddPackage(
         NAME Logger
         GIT_REPOSITORY git@github.com:chunyujin295/Logger.git
-        GIT_TAG v1.1.3
+        GIT_TAG v1.1.4
 )
 
 # ffmpeg

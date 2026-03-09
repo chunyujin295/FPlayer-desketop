@@ -11,6 +11,17 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 include(cmake/3rd.cmake)
 include(cmake/utils.cmake)
 
+# MinGW下静态链接通用依赖库
+if (MINGW)
+    add_link_options(
+            -static-libgcc
+            -static-libstdc++
+            -Wl,-Bstatic
+            -lwinpthread
+            -Wl,-Bdynamic
+    )
+endif()
+
 add_subdirectory(common)
 add_subdirectory(api)
 add_subdirectory(backend)
