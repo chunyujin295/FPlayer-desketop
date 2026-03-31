@@ -53,8 +53,10 @@ void fplayer::Service::selectCameraFormat(int index)
 {
 	if (!m_camera->selectCameraFormat(index))
 	{
-		LOG_WARN("fplayer::Service::selectCameraFormat(int index) ==> 摄像头格式切换失败");
+		LOG_DEBUG("fplayer::Service::selectCameraFormat(int index) ==> 摄像头格式切换失败");
+		return;
 	}
+	LOG_DEBUG("fplayer::Service::selectCameraFormat(int index) ==> 摄像头格式切换成功");
 }
 
 QList<QString> fplayer::Service::getCameraList() const
