@@ -36,16 +36,28 @@ CaptureWindow::CaptureWindow(QWidget* parent, fplayer::MediaBackendType backendT
 	// 4) 连接信号槽
 	// 摄像头变更
 	connect(this->ui->cmbDevices, &QComboBox::currentIndexChanged, [this](int index) {
+		if (index < 0)
+		{
+			return;
+		}
+
 		this->m_service->selectCamera(index);
 		QStringList formats(this->m_service->getCameraFormats(index));
 		this->ui->cmbFormats->clear();
 		this->ui->cmbFormats->addItems(formats);
 		this->ui->cmbFormats->setCurrentIndex(0);
+
 	});
 
 	// 摄像头格式变更
 	connect(this->ui->cmbFormats, &QComboBox::currentIndexChanged, [this](int index) {
+		if (index < 0)
+		{
+			return;
+		}
+
 		this->m_service->selectCameraFormat(index);
+
 	});
 
 
