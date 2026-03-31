@@ -2,7 +2,6 @@
   * 描述：摄像头播放抽象
   *
   * File：camera.h
-  * Author：chenyujin@mozihealthcare.cn
   * Date：2026/2/27
   * Update：
   * ************************************************/

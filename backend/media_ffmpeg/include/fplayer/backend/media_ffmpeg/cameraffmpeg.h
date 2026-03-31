@@ -2,7 +2,6 @@
   * 描述：
   *
   * File：cameraffmpeg.h
-  * Author：chenyujin@mozihealthcare.cn
   * Date：2026/3/3
   * Update：
   * ************************************************/

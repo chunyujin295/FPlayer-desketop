@@ -2,7 +2,6 @@
   * 描述：
   *
   * File：fglwidget.h
-  * Author：chenyujin@mozihealthcare.cn
   * Date：2026/3/6
   * Update：
   * ************************************************/

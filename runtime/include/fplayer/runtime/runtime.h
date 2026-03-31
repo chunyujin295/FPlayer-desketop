@@ -2,7 +2,6 @@
   * 描述：
   *
   * File：runtime.h
-  * Author：chenyujin@mozihealthcare.cn
   * Date：2026/2/28
   * Update：
   * ************************************************/

@@ -2,7 +2,6 @@
   * 描述：媒体文件播放抽象类
   *
   * File：player.h
-  * Author：chenyujin@mozihealthcare.cn
   * Date：2026/2/28
   * Update：
   * ************************************************/

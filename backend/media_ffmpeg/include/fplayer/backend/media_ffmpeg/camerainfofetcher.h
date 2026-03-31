@@ -2,7 +2,6 @@
   * 描述：ffmpeg下摄像头信息获取类 单例
   *
   * File：camerainfofetcher.h
-  * Author：chenyujin@mozihealthcare.cn
   * Date：2026/3/6
   * Update：
   * ************************************************/

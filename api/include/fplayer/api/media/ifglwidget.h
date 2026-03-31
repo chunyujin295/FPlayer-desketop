@@ -2,7 +2,6 @@
   * 描述：一个openwidget的抽象类，用于ffmpeg输出，需要后端继承实现
   *
   * File：ifglwidget.h
-  * Author：chenyujin@mozihealthcare.cn
   * Date：2026/3/6
   * Update：
   * ************************************************/

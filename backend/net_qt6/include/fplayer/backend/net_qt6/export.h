@@ -9,7 +9,6 @@
 **  此时 FPLAYER_BACKEND_NET_QT6_EXPORT 用于导入符号。
 **
 **  适用于跨平台 (Windows/Linux/macOS) 的 Qt 动态库构建。
-**  @Author：zhangzhiming@mozihealthcare.cn
 ****************************************************************************/
 #ifndef FPLAYER_BACKEND_NET_QT6_EXPORT_H
 #define FPLAYER_BACKEND_NET_QT6_EXPORT_H

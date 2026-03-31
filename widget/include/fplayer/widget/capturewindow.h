@@ -2,7 +2,6 @@
   * 描述：
   *
   * File：capturewindow.h
-  * Author：chenyujin@mozihealthcare.cn
   * Date：2026/2/19
   * Update：
   * ************************************************/

@@ -2,7 +2,6 @@
   * 描述：接管qDebug输出内容为Logger日志打印
   *
   * File：qtloggeradapter.h
-  * Author：chenyujin@mozihealthcare.cn
   * Date：2026/2/27
   * Update：
   * ************************************************/
