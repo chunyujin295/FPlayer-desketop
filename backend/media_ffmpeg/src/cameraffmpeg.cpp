@@ -7,7 +7,7 @@
 #include <fplayer/backend/media_ffmpeg/cameraffmpeg.h>
 
 #include "fplayer/backend/media_ffmpeg/camerainfofetcher.h"
-#include "fplayer/backend/media_ffmpeg/fglwidget.h"
+#include "fplayer/common/fglwidget/fglwidget.h"
 
 #include <logger/logger.h>
 
@@ -82,19 +82,19 @@ namespace fplayer
 		int frameBufferSize = 0;
 		QThread* captureThread = nullptr;
 		bool isCapturing = false;
-		bool isPaused = false;
+		// bool isPaused = true;
 		PreviewTarget previewTarget;
 		FGLWidget* fGLWieget = nullptr;
 
 		// 用于存储摄像头设备信息
-		struct CameraDeviceInfo
-		{
-			QString name;
-			QString devicePath;
-			QList<QString> formats;
-		};
+		// struct CameraDeviceInfo
+		// {
+		// 	QString name;
+		// 	QString devicePath;
+		// 	QList<QString> formats;
+		// };
 
-		QList<CameraDeviceInfo> cameraDevices;
+		// QList<CameraDeviceInfo> cameraDevices;
 
 		~Impl()
 		{
@@ -177,7 +177,8 @@ namespace fplayer
 
 	bool CameraFFmpeg::selectCamera(int index)
 	{
-		if (index < 0 || index >= m_impl->cameraDevices.size())
+		// if (index < 0 || index >= m_impl->cameraDevices.size())
+		if (index < 0 || index >= m_descriptions.size())
 		{
 			//qWarning() << "Invalid camera index:" << index;
 			return false;
@@ -188,8 +189,10 @@ namespace fplayer
 		m_impl->cleanup();
 
 		// 打开摄像头
-		const Impl::CameraDeviceInfo& deviceInfo = m_impl->cameraDevices[index];
-		QString devicePath = "video=" + deviceInfo.name;
+		// const Impl::CameraDeviceInfo& deviceInfo = m_impl->cameraDevices[index];
+		const auto deviceInfo = m_descriptions[index];
+		// QString devicePath = "video=" + deviceInfo.name;
+		QString devicePath = "video=" + deviceInfo.description;
 
 		int ret = avformat_open_input(&m_impl->formatContext, devicePath.toUtf8().constData(),
 		                              av_find_input_format("dshow"), nullptr);
@@ -276,7 +279,8 @@ namespace fplayer
 
 		// 启动捕获线程
 		m_impl->isCapturing = true;
-		m_impl->isPaused = false;
+		// m_impl->isPaused = false;
+		// m_isPlaying = true;
 		m_impl->captureThread = new QThread();
 		QObject::connect(m_impl->captureThread, &QThread::started, [this]() {
 			captureLoop();
@@ -298,19 +302,22 @@ namespace fplayer
 
 	void CameraFFmpeg::pause()
 	{
-		m_impl->isPaused = true;
-		//qdebug() << "Camera paused";
+		// m_impl->isPaused = true;
+		this->m_isPlaying = false;
+		qDebug() << "Camera paused";
 	}
 
 	void CameraFFmpeg::resume()
 	{
-		m_impl->isPaused = false;
-		//qdebug() << "Camera resumed";
+		// m_impl->isPaused = false;
+		this->m_isPlaying = true;
+		qDebug() << "Camera resumed";
 	}
 
 	bool CameraFFmpeg::isPlaying() const
 	{
-		return !m_impl->isPaused;
+		// return !m_impl->isPaused;
+		return m_isPlaying;
 	}
 
 	void CameraFFmpeg::setPreviewTarget(const PreviewTarget& target)
@@ -344,7 +351,8 @@ namespace fplayer
 
 		while (m_impl->isCapturing)
 		{
-			if (m_impl->isPaused)
+			// if (m_impl->isPaused)
+			if (!m_isPlaying)
 			{
 				QThread::msleep(100);
 				continue;
@@ -360,7 +368,7 @@ namespace fplayer
 				}
 				else
 				{
-					//qWarning() << "Error reading frame:" << av_err2str(ret);
+					// qWarning() << "Error reading frame:" << av_err2str(ret);
 					QThread::msleep(100);
 				}
 				continue;
@@ -371,7 +379,7 @@ namespace fplayer
 				ret = avcodec_send_packet(m_impl->codecContext, packet);
 				if (ret < 0)
 				{
-					//qWarning() << "Error sending packet:" << av_err2str(ret);
+					// qWarning() << "Error sending packet:" << av_err2str(ret);
 					av_packet_unref(packet);
 					continue;
 				}
@@ -385,7 +393,7 @@ namespace fplayer
 					}
 					else if (ret < 0)
 					{
-						//qWarning() << "Error receiving frame:" << av_err2str(ret);
+						// qWarning() << "Error receiving frame:" << av_err2str(ret);
 						break;
 					}
 
@@ -402,7 +410,7 @@ namespace fplayer
 					}
 					else
 					{
-						//qdebug() << "Captured frame:" << frame->width << "x" << frame->height;
+						qDebug() << "Captured frame:" << frame->width << "x" << frame->height;
 					}
 
 					av_frame_unref(frame);

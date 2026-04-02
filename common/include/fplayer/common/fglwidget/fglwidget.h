@@ -8,21 +8,17 @@
 #ifndef FPLAYER_DESKETOP_FGLWIDGET_H
 #define FPLAYER_DESKETOP_FGLWIDGET_H
 
+#include <fplayer/common/export.h>
 #include <QtOpenGLWidgets/QOpenGLWidget>
 #include <QOpenGLFunctions>
 
-#include <fplayer/backend/media_ffmpeg/export.h>
-#include <fplayer/api/media/ifglwidget.h>
-
 namespace fplayer
 {
-	class FGLWidget : public QOpenGLWidget, protected QOpenGLFunctions, public IFGLWidget
+	class FPLAYER_COMMON_EXPORT FGLWidget : public QOpenGLWidget, protected QOpenGLFunctions
 	{
 		Q_OBJECT
-
 	public:
 		explicit FGLWidget(QWidget* parent = nullptr);
-		~FGLWidget() = default;
 
 	protected:
 		void initializeGL() override;
@@ -30,5 +26,4 @@ namespace fplayer
 		void paintGL() override;
 	};
 }
-
 #endif //FPLAYER_DESKETOP_FGLWIDGET_H

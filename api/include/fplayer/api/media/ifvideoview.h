@@ -13,15 +13,15 @@
 
 namespace fplayer
 {
-	class IFVideoView
+	class FPLAYER_API_EXPORT IFVideoView
 	{
 	public:
-		FPLAYER_API_EXPORT IFVideoView(MediaBackendType backendType = MediaBackendType::Qt6);
-		virtual ~IFVideoView() = default;
+		IFVideoView(MediaBackendType backendType = MediaBackendType::Qt6);
+		virtual ~IFVideoView();
 
-		virtual PreviewTarget previewTarget() const = 0;
+		virtual PreviewTarget previewTarget() = 0;
 
-		FPLAYER_API_EXPORT void setBackendType(MediaBackendType backendType);
+		void setBackendType(MediaBackendType backendType);
 
 	protected:
 		MediaBackendType m_backendType;

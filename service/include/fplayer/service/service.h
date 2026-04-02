@@ -38,8 +38,14 @@ namespace fplayer
 
 		QList<QString> getCameraFormats(int index) const;
 
+		/**
+		 * 暂停播放
+		 */
 		void cameraPause();
 
+		/**
+		 * 恢复播放
+		 */
 		void cameraResume();
 
 		bool cameraIsPlaying();

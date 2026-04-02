@@ -1,6 +1,8 @@
-#include <fplayer/backend/media_ffmpeg/fglwidget.h>
+#include <fplayer/common/fglwidget/fglwidget.h>
+#include <QtOpenGLWidgets/QOpenGLWidget>
+#include <QOpenGLFunctions>
 
-fplayer::FGLWidget::FGLWidget(QWidget* parent)
+fplayer::FGLWidget::FGLWidget(QWidget* parent) : QOpenGLWidget(parent), QOpenGLFunctions()
 {
 }
 

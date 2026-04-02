@@ -5,6 +5,8 @@ fplayer::IFVideoView::IFVideoView(MediaBackendType backendType): m_backendType(b
 
 }
 
+fplayer::IFVideoView::~IFVideoView() = default;
+
 void fplayer::IFVideoView::setBackendType(MediaBackendType backendType)
 {
 	m_backendType = backendType;

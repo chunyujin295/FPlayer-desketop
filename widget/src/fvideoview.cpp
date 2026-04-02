@@ -8,12 +8,9 @@ fplayer::FVideoView::FVideoView(QWidget* parent) : QWidget(parent)
 	// 让这个控件有原生窗口句柄（FFmpeg/SDL/D3D 渲染需要）
 	setAttribute(Qt::WA_NativeWindow, true);
 
-	// Qt6 视频输出
-	auto lay = new QVBoxLayout(this);
-	lay->setContentsMargins(0, 0, 0, 0);
-	lay->setSpacing(0);
-	m_qtVideoWidget = new QVideoWidget(this);
-	lay->addWidget(m_qtVideoWidget);
+	m_lay = new QVBoxLayout(this);
+	m_lay->setContentsMargins(0, 0, 0, 0);
+	m_lay->setSpacing(0);
 }
 
 fplayer::FVideoView::~FVideoView() = default;
@@ -23,7 +20,7 @@ fplayer::FVideoView::~FVideoView() = default;
 // 	return m_sink;
 // }
 
-fplayer::PreviewTarget fplayer::FVideoView::previewTarget() const
+fplayer::PreviewTarget fplayer::FVideoView::previewTarget()
 {
 	PreviewTarget t{};
 
@@ -36,6 +33,33 @@ fplayer::PreviewTarget fplayer::FVideoView::previewTarget() const
 	t.window.width = width();
 	t.window.height = height();
 	t.window.device_pixel_ratio = devicePixelRatioF();
+
+	if (m_qtVideoWidget)
+	{
+		delete m_qtVideoWidget;
+		m_qtVideoWidget = nullptr;
+	}
+	if (m_glWidget)
+	{
+		delete m_glWidget;
+		m_glWidget = nullptr;
+	}
+
+	switch (m_backendType)
+	{
+	// Qt6 视频输出
+	case MediaBackendType::Qt6: {
+		m_qtVideoWidget = new QVideoWidget(this);
+		m_lay->addWidget(m_qtVideoWidget);
+		break;
+	}
+
+	case MediaBackendType::FFmpeg: {
+		m_glWidget = new FGLWidget(this);
+		m_lay->addWidget(m_glWidget);
+		break;
+	}
+	}
 
 	// 真正有用的部分
 	switch (m_backendType)

@@ -11,8 +11,9 @@
 #include <QWidget>
 #include <fplayer/widget/export.h>
 #include <fplayer/api/media/ifvideoview.h>
-#include <fplayer/api/media/ifglwidget.h>
+#include <fplayer/common/fglwidget/fglwidget.h>
 
+class QVBoxLayout;
 class QVideoWidget;
 class QVideoSink;
 
@@ -27,7 +28,7 @@ namespace fplayer
 		~FVideoView() override;
 
 		// QVideoSink* videoSink() const;// 给 Qt6 backend 用
-		PreviewTarget previewTarget() const override;
+		PreviewTarget previewTarget() override;
 
 	protected:
 		void showEvent(QShowEvent* e) override;// 确保 winId 可用
@@ -39,7 +40,8 @@ namespace fplayer
 
 	private:
 		QVideoWidget* m_qtVideoWidget = nullptr;
-		IFGLWidget* m_glWidget = nullptr;
+		FGLWidget* m_glWidget = nullptr;
+		QVBoxLayout* m_lay = nullptr;
 	};
 }
 

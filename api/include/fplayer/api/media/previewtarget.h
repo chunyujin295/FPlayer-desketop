@@ -11,7 +11,7 @@
 namespace fplayer
 {
 	// 原生窗口信息（跨平台扩展用）
-	struct NativeWindow
+	struct NativeWindow // 没什么大用
 	{
 #ifdef _WIN32
 		void* hwnd = nullptr;// HWND
