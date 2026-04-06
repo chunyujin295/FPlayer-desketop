@@ -2,12 +2,16 @@
 
 extern "C" {
 #include <libavdevice/avdevice.h>
+#include <libavformat/avformat.h>
 #include <libavutil/log.h>
 }
 
 #include <logger/logger.h>
 
 #include <mutex>
+#include <cstdlib>
+#include <QHash>
+#include <QSet>
 
 #ifdef _WIN32
 #include <dshow.h>
@@ -68,6 +72,96 @@ static void loggerCallback(void* ptr, int level, const char* fmt, va_list vargs)
 }
 
 QVector<QList<fplayer::CameraDescriptionFetcher::FCameraFormat>> fplayer::CameraDescriptionFetcher::m_cameraFormats;
+
+namespace
+{
+	QHash<QString, bool> g_formatValidationCache;
+	std::mutex g_formatValidationCacheMutex;
+
+	QString makeFormatCacheKey(const QString& cameraId, const QString& cameraDescription, int width, int height, int fps)
+	{
+		// 优先使用稳定 id，拿不到时回退 description
+		const QString cameraKey = cameraId.isEmpty() ? cameraDescription : cameraId;
+		return QString("%1|%2x%3|%4").arg(cameraKey).arg(width).arg(height).arg(fps);
+	}
+
+	bool validateFormatByFFmpeg(const QString& cameraDescription, int width, int height, int fps)
+	{
+		if (cameraDescription.isEmpty() || width <= 0 || height <= 0 || fps <= 0)
+		{
+			return false;
+		}
+
+		const QString devicePath = "video=" + cameraDescription;
+		const QString videoSize = QString("%1x%2").arg(width).arg(height);
+		const QString frameRate = QString::number(fps);
+
+		AVFormatContext* formatCtx = avformat_alloc_context();
+		if (!formatCtx)
+		{
+			return false;
+		}
+		formatCtx->probesize = 16 * 1024;
+		formatCtx->max_analyze_duration = 120 * 1000; // 120ms (us)
+
+		AVDictionary* options = nullptr;
+		av_dict_set(&options, "video_size", videoSize.toUtf8().constData(), 0);
+		av_dict_set(&options, "framerate", frameRate.toUtf8().constData(), 0);
+		av_dict_set(&options, "analyzeduration", "120000", 0);
+		av_dict_set(&options, "probesize", "16384", 0);
+
+		int ret = avformat_open_input(&formatCtx, devicePath.toUtf8().constData(), av_find_input_format("dshow"), &options);
+		av_dict_free(&options);
+		if (ret < 0)
+		{
+			if (formatCtx)
+			{
+				avformat_close_input(&formatCtx);
+			}
+			return false;
+		}
+
+		ret = avformat_find_stream_info(formatCtx, nullptr);
+		if (ret < 0)
+		{
+			avformat_close_input(&formatCtx);
+			return false;
+		}
+
+		bool hasVideoStream = false;
+		for (unsigned int i = 0; i < formatCtx->nb_streams; ++i)
+		{
+			if (formatCtx->streams[i]->codecpar && formatCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
+			{
+				hasVideoStream = true;
+				break;
+			}
+		}
+
+		avformat_close_input(&formatCtx);
+		return hasVideoStream;
+	}
+
+	bool isFormatUsable(const QString& cameraId, const QString& cameraDescription, int width, int height, int fps)
+	{
+		const QString key = makeFormatCacheKey(cameraId, cameraDescription, width, height, fps);
+		{
+			std::lock_guard<std::mutex> lock(g_formatValidationCacheMutex);
+			auto it = g_formatValidationCache.constFind(key);
+			if (it != g_formatValidationCache.constEnd())
+			{
+				return it.value();
+			}
+		}
+
+		const bool ok = validateFormatByFFmpeg(cameraDescription, width, height, fps);
+		{
+			std::lock_guard<std::mutex> lock(g_formatValidationCacheMutex);
+			g_formatValidationCache.insert(key, ok);
+		}
+		return ok;
+	}
+}
 
 fplayer::CameraDescriptionFetcher::CameraDescriptionFetcher()
 {
@@ -145,6 +239,7 @@ QList<fplayer::CameraDescription> fplayer::CameraDescriptionFetcher::getDescript
 	while (enumMoniker->Next(1, &moniker, nullptr) == S_OK)
 	{
 		CameraDescription device;
+		QSet<QString> seenFormats;
 
 		QList<FCameraFormat> formatList;
 
@@ -231,8 +326,8 @@ QList<fplayer::CameraDescription> fplayer::CameraDescriptionFetcher::getDescript
 									VIDEOINFOHEADER* vih =
 											(VIDEOINFOHEADER*)mediaType->pbFormat;
 
-									int width = vih->bmiHeader.biWidth;
-									int height = vih->bmiHeader.biHeight;
+									int width = std::abs(vih->bmiHeader.biWidth);
+									int height = std::abs(vih->bmiHeader.biHeight);
 
 									int fps = 0;
 
@@ -244,17 +339,26 @@ QList<fplayer::CameraDescription> fplayer::CameraDescriptionFetcher::getDescript
 
 									if (fps >= 1 && fps <= 240)
 									{
+										QString formatText = QString("%1x%2 %3fps")
+										                     .arg(width)
+										                     .arg(height)
+										                     .arg(fps);
+										if (seenFormats.contains(formatText))
+										{
+											continue;
+										}
+										seenFormats.insert(formatText);
+
 										FCameraFormat fmt;
 										fmt.width = width;
 										fmt.height = height;
 										fmt.fps = fps;
 
-										formatList.push_back(fmt);
-										QString res = QString("%1x%2 %3fps")
-										              .arg(width)
-										              .arg(height)
-										              .arg(fps);
-										device.formats.push_back(res);
+										if (isFormatUsable(device.id, device.description, width, height, fps))
+										{
+											formatList.push_back(fmt);
+											device.formats.push_back(formatText);
+										}
 									}
 								}
 

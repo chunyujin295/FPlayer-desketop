@@ -3,6 +3,8 @@
 #include <QPainter>
 #include <QImage>
 #include <QWidget>
+#include <QRegularExpression>
+#include <atomic>
 
 #include <fplayer/backend/media_ffmpeg/cameraffmpeg.h>
 
@@ -14,10 +16,37 @@
 // FFmpeg 设备相关头文件
 extern "C" {
 #include <libavdevice/avdevice.h>
+#include <libswscale/swscale.h>
 }
 
 namespace fplayer
 {
+	static int ffmpegInterruptCallback(void* opaque)
+	{
+		auto* capturing = static_cast<std::atomic<bool>*>(opaque);
+		if (!capturing)
+		{
+			return 0;
+		}
+		// 返回非0会中断阻塞 IO（如 av_read_frame）
+		return capturing->load() ? 0 : 1;
+	}
+
+	static bool parseCameraFormatText(const QString& formatText, int& width, int& height, int& fps)
+	{
+		// 兼容 "1920x1080 30fps"（可带空格/大小写）
+		static const QRegularExpression re(R"((\d+)\s*x\s*(\d+)\s+(\d+)\s*fps)", QRegularExpression::CaseInsensitiveOption);
+		QRegularExpressionMatch m = re.match(formatText);
+		if (!m.hasMatch())
+		{
+			return false;
+		}
+		width = m.captured(1).toInt();
+		height = m.captured(2).toInt();
+		fps = m.captured(3).toInt();
+		return width > 0 && height > 0 && fps > 0;
+	}
+
 	// 可选：为线程安全做准备
 	static std::mutex log_mutex;
 
@@ -77,8 +106,13 @@ namespace fplayer
 		AVFormatContext* formatContext = nullptr;
 		AVCodecContext* codecContext = nullptr;
 		AVStream* stream = nullptr;
+		SwsContext* swsContext = nullptr;
+		AVFrame* swsFrame = nullptr;
+		int swsWidth = 0;
+		int swsHeight = 0;
+		AVPixelFormat swsSrcFormat = AV_PIX_FMT_NONE;
 		QThread* captureThread = nullptr;
-		bool isCapturing = false;
+		std::atomic<bool> isCapturing{false};
 		PreviewTarget previewTarget;
 		FGLWidget* fGLWieget = nullptr;
 
@@ -90,6 +124,20 @@ namespace fplayer
 
 		void cleanup()
 		{
+			if (swsFrame)
+			{
+				av_frame_free(&swsFrame);
+				swsFrame = nullptr;
+			}
+			if (swsContext)
+			{
+				sws_freeContext(swsContext);
+				swsContext = nullptr;
+			}
+			swsWidth = 0;
+			swsHeight = 0;
+			swsSrcFormat = AV_PIX_FMT_NONE;
+
 			if (codecContext)
 			{
 				avcodec_free_context(&codecContext);
@@ -104,22 +152,29 @@ namespace fplayer
 
 		void stopCapture()
 		{
-			isCapturing = false;
-
-			// 中断阻塞的 av_read_frame
-			if (formatContext)
-			{
-				avformat_close_input(&formatContext);
-				formatContext = nullptr;
-			}
+			isCapturing.store(false);
 
 			if (captureThread && captureThread->isRunning())
 			{
-				captureThread->wait(3000);// 等待最多3秒
+				captureThread->quit();
+				captureThread->wait(500);// 等待最多0.5秒
 				if (captureThread->isRunning())
 				{
-					captureThread->terminate();// 强制终止
-					captureThread->wait();
+					// 协作式退出仍未返回时，关闭输入以打断阻塞读，再短等一次
+					if (formatContext)
+					{
+						avformat_close_input(&formatContext);
+						formatContext = nullptr;
+					}
+					captureThread->quit();
+					captureThread->wait(1500);
+				}
+				if (captureThread->isRunning())
+				{
+					qDebug() << "[CameraFFmpeg] capture thread did not stop in time.";
+					// 避免在仍运行时析构 QThread 对象导致崩溃
+					captureThread = nullptr;
+					return;
 				}
 				delete captureThread;
 				captureThread = nullptr;
@@ -182,12 +237,71 @@ namespace fplayer
 		// QString devicePath = "video=" + deviceInfo.name;
 		QString devicePath = "video=" + deviceInfo.description;
 
+		// 摄像头切换时缩短探测时间，降低打开延迟
+		if (!m_impl->formatContext)
+		{
+			m_impl->formatContext = avformat_alloc_context();
+		}
+		if (!m_impl->formatContext)
+		{
+			return false;
+		}
+		m_impl->formatContext->interrupt_callback.callback = ffmpegInterruptCallback;
+		m_impl->formatContext->interrupt_callback.opaque = &m_impl->isCapturing;
+		m_impl->formatContext->probesize = 32 * 1024;
+		m_impl->formatContext->max_analyze_duration = 200 * 1000; // 200ms (us)
+
+		AVDictionary* options = nullptr;
+		av_dict_set(&options, "analyzeduration", "200000", 0);
+		av_dict_set(&options, "probesize", "32768", 0);
+		bool hasExplicitFormat = false;
+
+		// 如果已选择格式，优先按指定分辨率/帧率打开
+		if (deviceInfo.formatIndex >= 0 && deviceInfo.formatIndex < deviceInfo.formats.size())
+		{
+			int fmtW = 0;
+			int fmtH = 0;
+			int fmtFps = 0;
+			if (parseCameraFormatText(deviceInfo.formats[deviceInfo.formatIndex], fmtW, fmtH, fmtFps))
+			{
+				const QString videoSize = QString("%1x%2").arg(fmtW).arg(fmtH);
+				const QString frameRate = QString::number(fmtFps);
+				av_dict_set(&options, "video_size", videoSize.toUtf8().constData(), 0);
+				av_dict_set(&options, "framerate", frameRate.toUtf8().constData(), 0);
+				hasExplicitFormat = true;
+				qDebug() << "[CameraFFmpeg] Open with format:" << videoSize << frameRate + "fps";
+			}
+		}
+
 		int ret = avformat_open_input(&m_impl->formatContext, devicePath.toUtf8().constData(),
-		                              av_find_input_format("dshow"), nullptr);
+		                              av_find_input_format("dshow"), &options);
+		av_dict_free(&options);
 		if (ret < 0)
 		{
-			//qWarning() << "Failed to open camera:" << av_err2str(ret);
-			return false;
+			if (hasExplicitFormat)
+			{
+				qDebug() << "[CameraFFmpeg] Open with explicit format failed, retry with default format.";
+				if (m_impl->formatContext)
+				{
+					avformat_close_input(&m_impl->formatContext);
+				}
+
+				AVDictionary* fallbackOptions = nullptr;
+				av_dict_set(&fallbackOptions, "analyzeduration", "200000", 0);
+				av_dict_set(&fallbackOptions, "probesize", "32768", 0);
+				ret = avformat_open_input(&m_impl->formatContext, devicePath.toUtf8().constData(),
+				                          av_find_input_format("dshow"), &fallbackOptions);
+				av_dict_free(&fallbackOptions);
+				if (ret >= 0)
+				{
+					qDebug() << "[CameraFFmpeg] Fallback open succeeded with device default format.";
+				}
+			}
+
+			if (ret < 0)
+			{
+				return false;
+			}
 		}
 
 		// 查找视频流
@@ -255,11 +369,11 @@ namespace fplayer
 		}
 
 		// 启动捕获线程
-		m_impl->isCapturing = true;
-		m_isPlaying = true;
+		m_impl->isCapturing.store(true);
 		m_impl->captureThread = new QThread();
 		QObject::connect(m_impl->captureThread, &QThread::started, [this]() {
 			captureLoop();
+			QThread::currentThread()->quit();
 		});
 		m_impl->captureThread->start();
 
@@ -270,10 +384,22 @@ namespace fplayer
 
 	bool CameraFFmpeg::selectCameraFormat(int index)
 	{
-		// 简化处理，这里只是返回 true
-		// 实际项目中需要根据索引设置不同的分辨率和帧率
-		//qdebug() << "Selected camera format index:" << index;
-		return true;
+		if (m_cameraIndex < 0 || m_cameraIndex >= m_descriptions.size())
+		{
+			return false;
+		}
+
+		auto& desc = m_descriptions[m_cameraIndex];
+		if (index < 0 || index >= desc.formats.size())
+		{
+			return false;
+		}
+
+		desc.formatIndex = index;
+		qDebug() << "[CameraFFmpeg] Select format index:" << index << desc.formats[index];
+
+		// 通过重开当前摄像头应用新格式
+		return selectCamera(m_cameraIndex);
 	}
 
 	void CameraFFmpeg::pause()
@@ -320,7 +446,7 @@ namespace fplayer
 		AVPacket* packet = av_packet_alloc();
 		AVFrame* frame = av_frame_alloc();
 
-		while (m_impl->isCapturing)
+		while (m_impl->isCapturing.load())
 		{
 			if (!m_isPlaying)
 			{
@@ -365,41 +491,101 @@ namespace fplayer
 					}
 
 					// 直接发射 YUV 数据，避免 CPU 转换
-					// FFmpeg 解码后的帧通常是 YUV420P 格式
-					if (frame->format == AV_PIX_FMT_YUV420P || frame->format == AV_PIX_FMT_YUVJ420P)
+					AVFrame* renderFrame = frame;
+					if (frame->format != AV_PIX_FMT_YUV420P && frame->format != AV_PIX_FMT_YUVJ420P)
 					{
-						const int yStride = frame->linesize[0];
-						const int uStride = frame->linesize[1];
-						const int vStride = frame->linesize[2];
-						const int width = frame->width;
-						const int height = frame->height;
-						const int uvHeight = height / 2;
-
-						QByteArray yBuffer(reinterpret_cast<const char*>(frame->data[0]), yStride * height);
-						QByteArray uBuffer(reinterpret_cast<const char*>(frame->data[1]), uStride * uvHeight);
-						QByteArray vBuffer(reinterpret_cast<const char*>(frame->data[2]), vStride * uvHeight);
-
-						static int frameCount = 0;
-						if (++frameCount % 30 == 0)  // 每30帧输出一次
+						AVPixelFormat srcFormat = static_cast<AVPixelFormat>(frame->format);
+						if (!m_impl->swsContext ||
+							m_impl->swsWidth != frame->width ||
+							m_impl->swsHeight != frame->height ||
+							m_impl->swsSrcFormat != srcFormat)
 						{
-							qDebug() << "[CameraFFmpeg] Emitting YUV frame:" << width << "x" << height
-							         << "Y stride:" << yStride << "format:" << frame->format;
+							if (m_impl->swsContext)
+							{
+								sws_freeContext(m_impl->swsContext);
+								m_impl->swsContext = nullptr;
+							}
+							if (m_impl->swsFrame)
+							{
+								av_frame_free(&m_impl->swsFrame);
+								m_impl->swsFrame = nullptr;
+							}
+
+							m_impl->swsContext = sws_getContext(
+								frame->width, frame->height, srcFormat,
+								frame->width, frame->height, AV_PIX_FMT_YUV420P,
+								SWS_BILINEAR, nullptr, nullptr, nullptr
+							);
+							if (!m_impl->swsContext)
+							{
+								qDebug() << "[CameraFFmpeg] Failed to create sws context, src format:" << frame->format;
+								av_frame_unref(frame);
+								continue;
+							}
+
+							m_impl->swsFrame = av_frame_alloc();
+							if (!m_impl->swsFrame)
+							{
+								qDebug() << "[CameraFFmpeg] Failed to allocate sws frame";
+								av_frame_unref(frame);
+								continue;
+							}
+							m_impl->swsFrame->format = AV_PIX_FMT_YUV420P;
+							m_impl->swsFrame->width = frame->width;
+							m_impl->swsFrame->height = frame->height;
+							if (av_frame_get_buffer(m_impl->swsFrame, 32) < 0)
+							{
+								qDebug() << "[CameraFFmpeg] Failed to allocate sws frame buffer";
+								av_frame_unref(frame);
+								continue;
+							}
+
+							m_impl->swsWidth = frame->width;
+							m_impl->swsHeight = frame->height;
+							m_impl->swsSrcFormat = srcFormat;
+							qDebug() << "[CameraFFmpeg] Enable sws convert from format" << frame->format << "to YUV420P";
 						}
-						emit yuvFrameReady(
-							yBuffer,
-							uBuffer,
-							vBuffer,
-							width,
-							height,
-							yStride,
-							uStride,
-							vStride
+
+						av_frame_make_writable(m_impl->swsFrame);
+						sws_scale(
+							m_impl->swsContext,
+							frame->data,
+							frame->linesize,
+							0,
+							frame->height,
+							m_impl->swsFrame->data,
+							m_impl->swsFrame->linesize
 						);
+						renderFrame = m_impl->swsFrame;
 					}
-					else
+
+					const int yStride = renderFrame->linesize[0];
+					const int uStride = renderFrame->linesize[1];
+					const int vStride = renderFrame->linesize[2];
+					const int width = renderFrame->width;
+					const int height = renderFrame->height;
+					const int uvHeight = height / 2;
+
+					QByteArray yBuffer(reinterpret_cast<const char*>(renderFrame->data[0]), yStride * height);
+					QByteArray uBuffer(reinterpret_cast<const char*>(renderFrame->data[1]), uStride * uvHeight);
+					QByteArray vBuffer(reinterpret_cast<const char*>(renderFrame->data[2]), vStride * uvHeight);
+
+					static int frameCount = 0;
+					if (++frameCount % 30 == 0)
 					{
-						qDebug() << "[CameraFFmpeg] Unsupported pixel format:" << frame->format;
+						qDebug() << "[CameraFFmpeg] Emitting YUV frame:" << width << "x" << height
+						         << "Y stride:" << yStride << "src format:" << frame->format;
 					}
+					emit yuvFrameReady(
+						yBuffer,
+						uBuffer,
+						vBuffer,
+						width,
+						height,
+						yStride,
+						uStride,
+						vStride
+					);
 
 					av_frame_unref(frame);
 				}

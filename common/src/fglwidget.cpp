@@ -4,6 +4,7 @@
 #include <QOpenGLShader>
 #include <QDebug>
 #include <QtAlgorithms>
+#include <cstring>
 
 namespace fplayer
 {
@@ -173,7 +174,7 @@ namespace fplayer
 			m_texY->setMinificationFilter(QOpenGLTexture::Linear);
 			m_texY->setMagnificationFilter(QOpenGLTexture::Linear);
 			m_texY->setWrapMode(QOpenGLTexture::ClampToEdge);
-			m_texY->setFormat(QOpenGLTexture::LuminanceFormat);
+			m_texY->setFormat(QOpenGLTexture::R8_UNorm);
 			m_texY->setSize(yWidth, yHeight);
 			m_texY->allocateStorage();
 		}
@@ -186,7 +187,7 @@ namespace fplayer
 			m_texU->setMinificationFilter(QOpenGLTexture::Linear);
 			m_texU->setMagnificationFilter(QOpenGLTexture::Linear);
 			m_texU->setWrapMode(QOpenGLTexture::ClampToEdge);
-			m_texU->setFormat(QOpenGLTexture::LuminanceFormat);
+			m_texU->setFormat(QOpenGLTexture::R8_UNorm);
 			m_texU->setSize(uvWidth, uvHeight);
 			m_texU->allocateStorage();
 		}
@@ -199,27 +200,24 @@ namespace fplayer
 			m_texV->setMinificationFilter(QOpenGLTexture::Linear);
 			m_texV->setMagnificationFilter(QOpenGLTexture::Linear);
 			m_texV->setWrapMode(QOpenGLTexture::ClampToEdge);
-			m_texV->setFormat(QOpenGLTexture::LuminanceFormat);
+			m_texV->setFormat(QOpenGLTexture::R8_UNorm);
 			m_texV->setSize(uvWidth, uvHeight);
 			m_texV->allocateStorage();
 		}
 
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
 		// 上传 Y 数据
 		m_texY->bind();
-		glPixelStorei(GL_UNPACK_ROW_LENGTH, m_yuvData.yStride);
-		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, yWidth, yHeight, GL_LUMINANCE, GL_UNSIGNED_BYTE, m_yuvData.yBuffer.constData());
+		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, yWidth, yHeight, GL_RED, GL_UNSIGNED_BYTE, m_yuvData.yBuffer.constData());
 
 		// 上传 U 数据
 		m_texU->bind();
-		glPixelStorei(GL_UNPACK_ROW_LENGTH, m_yuvData.uStride);
-		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, uvWidth, uvHeight, GL_LUMINANCE, GL_UNSIGNED_BYTE, m_yuvData.uBuffer.constData());
+		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, uvWidth, uvHeight, GL_RED, GL_UNSIGNED_BYTE, m_yuvData.uBuffer.constData());
 
 		// 上传 V 数据
 		m_texV->bind();
-		glPixelStorei(GL_UNPACK_ROW_LENGTH, m_yuvData.vStride);
-		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, uvWidth, uvHeight, GL_LUMINANCE, GL_UNSIGNED_BYTE, m_yuvData.vBuffer.constData());
-
-		glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, uvWidth, uvHeight, GL_RED, GL_UNSIGNED_BYTE, m_yuvData.vBuffer.constData());
 	}
 
 	void FGLWidget::updateYUVFrame(const QByteArray& yData, const QByteArray& uData, const QByteArray& vData,
@@ -236,16 +234,27 @@ namespace fplayer
 		// 复制 YUV 数据
 		m_yuvData.width = width;
 		m_yuvData.height = height;
-		m_yuvData.yStride = yStride;
-		m_yuvData.uStride = uStride;
-		m_yuvData.vStride = vStride;
+		const int uvWidth = width / 2;
+		const int uvHeight = height / 2;
 
-		// Y 平面: yStride * height
-		m_yuvData.yBuffer = yData;
-		
-		// U/V 平面: uStride/vStride * (height/2)
-		m_yuvData.uBuffer = uData;
-		m_yuvData.vBuffer = vData;
+		// 重打包为紧密内存，避免依赖 GL_UNPACK_ROW_LENGTH
+		m_yuvData.yStride = width;
+		m_yuvData.uStride = uvWidth;
+		m_yuvData.vStride = uvWidth;
+
+		m_yuvData.yBuffer.resize(width * height);
+		m_yuvData.uBuffer.resize(uvWidth * uvHeight);
+		m_yuvData.vBuffer.resize(uvWidth * uvHeight);
+
+		for (int row = 0; row < height; ++row)
+		{
+			memcpy(m_yuvData.yBuffer.data() + row * width, yData.constData() + row * yStride, width);
+		}
+		for (int row = 0; row < uvHeight; ++row)
+		{
+			memcpy(m_yuvData.uBuffer.data() + row * uvWidth, uData.constData() + row * uStride, uvWidth);
+			memcpy(m_yuvData.vBuffer.data() + row * uvWidth, vData.constData() + row * vStride, uvWidth);
+		}
 		
 		m_yuvData.hasData = true;
 
@@ -293,57 +302,57 @@ namespace fplayer
 
 	void FGLWidget::calculateVertices(float* vertices, int windowWidth, int windowHeight, int imageWidth, int imageHeight)
 	{
+		if (windowWidth <= 0 || windowHeight <= 0 || imageWidth <= 0 || imageHeight <= 0)
+		{
+			return;
+		}
+
 		// 计算窗口和图像的宽高比
 		float windowAspect = static_cast<float>(windowWidth) / windowHeight;
 		float imageAspect = static_cast<float>(imageWidth) / imageHeight;
 
-		// 计算缩放后的顶点坐标
+		// contain 等比缩放：缩放系数取两轴最小值
+		float scaleX = 1.0f;
+		float scaleY = 1.0f;
+
 		float left, right, top, bottom;
 
 		if (windowAspect > imageAspect)
 		{
-			// 窗口比图像宽，上下留黑边
-			float scale = imageAspect / windowAspect;
-			left = -1.0f;
-			right = 1.0f;
-			top = scale;
-			bottom = -scale;
+			// 窗口更宽：高度贴满，左右留黑边
+			scaleX = imageAspect / windowAspect;
 		}
 		else
 		{
-			// 窗口比图像高，左右留黑边
-			float scale = windowAspect / imageAspect;
-			left = -scale;
-			right = scale;
-			top = 1.0f;
-			bottom = -1.0f;
+			// 窗口更高：宽度贴满，上下留黑边
+			scaleY = windowAspect / imageAspect;
 		}
 
-		// 设置顶点数据：位置 (x, y) 和纹理坐标 (u, v)
-		// 注意：OpenGL 纹理坐标原点在左下角，需要垂直翻转纹理坐标
-		
-		// 左下角 (位置) -> 左上角 (纹理)
+		left = -scaleX;
+		right = scaleX;
+		top = scaleY;
+		bottom = -scaleY;
+
+		// 顶点顺序：左下、右下、右上、左上
+		// 纹理坐标采用正常方向，避免上下翻转
 		vertices[0] = left;
 		vertices[1] = bottom;
 		vertices[2] = 0.0f;
-		vertices[3] = 0.0f;
+		vertices[3] = 1.0f;
 
-		// 右下角 (位置) -> 右上角 (纹理)
 		vertices[4] = right;
 		vertices[5] = bottom;
 		vertices[6] = 1.0f;
-		vertices[7] = 0.0f;
+		vertices[7] = 1.0f;
 
-		// 右上角 (位置) -> 右下角 (纹理)
 		vertices[8] = right;
 		vertices[9] = top;
 		vertices[10] = 1.0f;
-		vertices[11] = 1.0f;
+		vertices[11] = 0.0f;
 
-		// 左上角 (位置) -> 左下角 (纹理)
 		vertices[12] = left;
 		vertices[13] = top;
 		vertices[14] = 0.0f;
-		vertices[15] = 1.0f;
+		vertices[15] = 0.0f;
 	}
 }
