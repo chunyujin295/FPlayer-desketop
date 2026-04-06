@@ -21,6 +21,9 @@ extern "C" {
 
 namespace fplayer
 {
+	// FFmpeg 阻塞读中断回调：
+	// 当 isCapturing=false 时返回 1，可打断 av_read_frame 的阻塞等待，
+	// 让切换/停止流程更快结束，避免线程卡死。
 	static int ffmpegInterruptCallback(void* opaque)
 	{
 		auto* capturing = static_cast<std::atomic<bool>*>(opaque);
@@ -103,9 +106,11 @@ namespace fplayer
 
 	struct CameraFFmpeg::Impl
 	{
+		// 输入/解码主链路对象
 		AVFormatContext* formatContext = nullptr;
 		AVCodecContext* codecContext = nullptr;
 		AVStream* stream = nullptr;
+		// 像素格式转换资源：用于把 NV12/MJPEG 等统一转成 YUV420P
 		SwsContext* swsContext = nullptr;
 		AVFrame* swsFrame = nullptr;
 		int swsWidth = 0;
@@ -124,6 +129,8 @@ namespace fplayer
 
 		void cleanup()
 		{
+			// cleanup 仅释放 FFmpeg 媒体资源；
+			// 线程对象生命周期由 stopCapture() 统一处理。
 			if (swsFrame)
 			{
 				av_frame_free(&swsFrame);
@@ -152,15 +159,17 @@ namespace fplayer
 
 		void stopCapture()
 		{
+			// 1) 协作式停止信号（供回调与循环判断）
 			isCapturing.store(false);
 
 			if (captureThread && captureThread->isRunning())
 			{
+				// 2) 先尝试正常退出线程事件循环
 				captureThread->quit();
 				captureThread->wait(500);// 等待最多0.5秒
 				if (captureThread->isRunning())
 				{
-					// 协作式退出仍未返回时，关闭输入以打断阻塞读，再短等一次
+					// 3) 仍阻塞时，关闭输入打断 av_read_frame
 					if (formatContext)
 					{
 						avformat_close_input(&formatContext);
@@ -172,7 +181,7 @@ namespace fplayer
 				if (captureThread->isRunning())
 				{
 					qDebug() << "[CameraFFmpeg] capture thread did not stop in time.";
-					// 避免在仍运行时析构 QThread 对象导致崩溃
+					// 绝不 delete 正在运行的 QThread（会触发崩溃）
 					captureThread = nullptr;
 					return;
 				}
@@ -227,7 +236,7 @@ namespace fplayer
 			return false;
 		}
 
-		// 停止当前捕获
+		// 切换摄像头时采用“先停旧链路，再建新链路”，避免状态串扰。
 		m_impl->stopCapture();
 		m_impl->cleanup();
 
@@ -237,7 +246,7 @@ namespace fplayer
 		// QString devicePath = "video=" + deviceInfo.name;
 		QString devicePath = "video=" + deviceInfo.description;
 
-		// 摄像头切换时缩短探测时间，降低打开延迟
+		// 为切换场景缩短探测时长，降低打开延迟。
 		if (!m_impl->formatContext)
 		{
 			m_impl->formatContext = avformat_alloc_context();
@@ -256,7 +265,7 @@ namespace fplayer
 		av_dict_set(&options, "probesize", "32768", 0);
 		bool hasExplicitFormat = false;
 
-		// 如果已选择格式，优先按指定分辨率/帧率打开
+		// 若已有格式选择，则优先按该分辨率/帧率打开设备。
 		if (deviceInfo.formatIndex >= 0 && deviceInfo.formatIndex < deviceInfo.formats.size())
 		{
 			int fmtW = 0;
@@ -304,7 +313,7 @@ namespace fplayer
 			}
 		}
 
-		// 查找视频流
+		// 读取流信息：后续找视频流和建解码器依赖这一步。
 		ret = avformat_find_stream_info(m_impl->formatContext, nullptr);
 		if (ret < 0)
 		{
@@ -313,7 +322,7 @@ namespace fplayer
 			return false;
 		}
 
-		// 找到视频流索引
+		// 当前策略：取第一个视频流作为采集目标。
 		int videoStreamIndex = -1;
 		for (unsigned int i = 0; i < m_impl->formatContext->nb_streams; ++i)
 		{
@@ -334,7 +343,7 @@ namespace fplayer
 		m_impl->stream = m_impl->formatContext->streams[videoStreamIndex];
 		AVCodecParameters* codecParams = m_impl->stream->codecpar;
 
-		// 找到解码器
+		// 解码链路：find decoder -> alloc context -> copy params -> open。
 		const AVCodec* codec = avcodec_find_decoder(codecParams->codec_id);
 		if (!codec)
 		{
@@ -368,7 +377,7 @@ namespace fplayer
 			return false;
 		}
 
-		// 启动捕获线程
+		// 启动采集线程；captureLoop 返回后主动 quit 线程事件循环。
 		m_impl->isCapturing.store(true);
 		m_impl->captureThread = new QThread();
 		QObject::connect(m_impl->captureThread, &QThread::started, [this]() {
@@ -398,7 +407,7 @@ namespace fplayer
 		desc.formatIndex = index;
 		qDebug() << "[CameraFFmpeg] Select format index:" << index << desc.formats[index];
 
-		// 通过重开当前摄像头应用新格式
+		// 切格式策略：复用 selectCamera() 做完整重建，稳定性优先。
 		return selectCamera(m_cameraIndex);
 	}
 
@@ -443,6 +452,8 @@ namespace fplayer
 
 	void CameraFFmpeg::captureLoop()
 	{
+		// 采集循环标准流程：
+		// av_read_frame -> avcodec_send_packet -> avcodec_receive_frame -> 发到渲染层
 		AVPacket* packet = av_packet_alloc();
 		AVFrame* frame = av_frame_alloc();
 
@@ -450,6 +461,7 @@ namespace fplayer
 		{
 			if (!m_isPlaying)
 			{
+				// 暂停只阻塞生产，不销毁链路；恢复播放时可快速继续。
 				QThread::msleep(100);
 				continue;
 			}
@@ -494,6 +506,7 @@ namespace fplayer
 					AVFrame* renderFrame = frame;
 					if (frame->format != AV_PIX_FMT_YUV420P && frame->format != AV_PIX_FMT_YUVJ420P)
 					{
+						// 将输入像素格式统一转换为 YUV420P，简化 OpenGL 渲染端处理。
 						AVPixelFormat srcFormat = static_cast<AVPixelFormat>(frame->format);
 						if (!m_impl->swsContext ||
 							m_impl->swsWidth != frame->width ||
@@ -566,6 +579,8 @@ namespace fplayer
 					const int height = renderFrame->height;
 					const int uvHeight = height / 2;
 
+					// 这里必须做深拷贝（QByteArray）：
+					// 信号是跨线程 queued 传递，AVFrame 原始指针在 unref 后会失效。
 					QByteArray yBuffer(reinterpret_cast<const char*>(renderFrame->data[0]), yStride * height);
 					QByteArray uBuffer(reinterpret_cast<const char*>(renderFrame->data[1]), uStride * uvHeight);
 					QByteArray vBuffer(reinterpret_cast<const char*>(renderFrame->data[2]), vStride * uvHeight);

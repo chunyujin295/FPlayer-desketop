@@ -106,6 +106,7 @@ namespace fplayer
 
 		m_program->bind();
 
+		// 锁保护 CPU 侧帧缓存，避免 updateYUVFrame 与 paintGL 并发读写。
 		QMutexLocker locker(&m_mutex);
 
 		updateYUVTextures();
@@ -127,7 +128,7 @@ namespace fplayer
 
 		locker.unlock();
 
-		// 计算等比例缩放的顶点坐标
+		// 每帧按当前窗口/图像比例计算顶点，实现 contain 等比显示（黑边而非拉伸）。
 		GLfloat vertices[16];
 		calculateVertices(vertices, width(), height(), m_yuvData.width, m_yuvData.height);
 
@@ -161,6 +162,7 @@ namespace fplayer
 			return;
 		}
 
+		// YUV420P: Y 平面全分辨率，U/V 平面各为 1/2 宽高。
 		int yWidth = m_yuvData.width;
 		int yHeight = m_yuvData.height;
 		int uvWidth = yWidth / 2;
@@ -205,8 +207,10 @@ namespace fplayer
 			m_texV->allocateStorage();
 		}
 
+		// 单通道纹理上传时，使用 1 字节对齐避免行对齐导致的错位。
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
+		// 使用 GL_RED + R8_UNorm，兼容性优于旧的 GL_LUMINANCE 路径。
 		// 上传 Y 数据
 		m_texY->bind();
 		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, yWidth, yHeight, GL_RED, GL_UNSIGNED_BYTE, m_yuvData.yBuffer.constData());
@@ -230,6 +234,12 @@ namespace fplayer
 		}
 
 		QMutexLocker locker(&m_mutex);
+		const bool formatChanged = (m_yuvData.width != width) ||
+		                           (m_yuvData.height != height) ||
+		                           (m_yuvData.yStride != width) ||
+		                           (m_yuvData.uStride != (width / 2)) ||
+		                           (m_yuvData.vStride != (width / 2));
+		const bool firstFrame = !m_yuvData.hasData;
 
 		// 复制 YUV 数据
 		m_yuvData.width = width;
@@ -237,7 +247,8 @@ namespace fplayer
 		const int uvWidth = width / 2;
 		const int uvHeight = height / 2;
 
-		// 重打包为紧密内存，避免依赖 GL_UNPACK_ROW_LENGTH
+		// 重打包为紧密内存（stride == width / uvWidth）：
+		// 这样渲染阶段不依赖 GL_UNPACK_ROW_LENGTH，兼容更多驱动/上下文。
 		m_yuvData.yStride = width;
 		m_yuvData.uStride = uvWidth;
 		m_yuvData.vStride = uvWidth;
@@ -257,21 +268,13 @@ namespace fplayer
 		}
 		
 		m_yuvData.hasData = true;
-
-		// 检查 Y 数据是否有效（非零）
-		bool hasValidData = false;
-		for (int i = 0; i < qMin(100, m_yuvData.yBuffer.size()); ++i)
+		// 仅在首帧、格式变化、低频心跳时打印，避免逐帧日志拖慢 UI 线程。
+		static int heartbeatCounter = 0;
+		if (firstFrame || formatChanged || (++heartbeatCounter % 300 == 0))
 		{
-			if (m_yuvData.yBuffer[i] != 0)
-			{
-				hasValidData = true;
-				break;
-			}
+			qDebug() << "[FGLWidget::updateYUVFrame] Frame:" << width << "x" << height
+			         << "Y stride:" << yStride << "U stride:" << uStride << "V stride:" << vStride;
 		}
-
-		qDebug() << "[FGLWidget::updateYUVFrame] Frame:" << width << "x" << height
-		         << "Y stride:" << yStride << "U stride:" << uStride << "V stride:" << vStride
-		         << "Y size:" << m_yuvData.yBuffer.size() << "Valid data:" << hasValidData;
 
 		update();
 	}

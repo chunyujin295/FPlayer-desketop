@@ -10,7 +10,6 @@ extern "C" {
 
 #include <mutex>
 #include <cstdlib>
-#include <QHash>
 #include <QSet>
 
 #ifdef _WIN32
@@ -75,92 +74,6 @@ QVector<QList<fplayer::CameraDescriptionFetcher::FCameraFormat>> fplayer::Camera
 
 namespace
 {
-	QHash<QString, bool> g_formatValidationCache;
-	std::mutex g_formatValidationCacheMutex;
-
-	QString makeFormatCacheKey(const QString& cameraId, const QString& cameraDescription, int width, int height, int fps)
-	{
-		// 优先使用稳定 id，拿不到时回退 description
-		const QString cameraKey = cameraId.isEmpty() ? cameraDescription : cameraId;
-		return QString("%1|%2x%3|%4").arg(cameraKey).arg(width).arg(height).arg(fps);
-	}
-
-	bool validateFormatByFFmpeg(const QString& cameraDescription, int width, int height, int fps)
-	{
-		if (cameraDescription.isEmpty() || width <= 0 || height <= 0 || fps <= 0)
-		{
-			return false;
-		}
-
-		const QString devicePath = "video=" + cameraDescription;
-		const QString videoSize = QString("%1x%2").arg(width).arg(height);
-		const QString frameRate = QString::number(fps);
-
-		AVFormatContext* formatCtx = avformat_alloc_context();
-		if (!formatCtx)
-		{
-			return false;
-		}
-		formatCtx->probesize = 16 * 1024;
-		formatCtx->max_analyze_duration = 120 * 1000; // 120ms (us)
-
-		AVDictionary* options = nullptr;
-		av_dict_set(&options, "video_size", videoSize.toUtf8().constData(), 0);
-		av_dict_set(&options, "framerate", frameRate.toUtf8().constData(), 0);
-		av_dict_set(&options, "analyzeduration", "120000", 0);
-		av_dict_set(&options, "probesize", "16384", 0);
-
-		int ret = avformat_open_input(&formatCtx, devicePath.toUtf8().constData(), av_find_input_format("dshow"), &options);
-		av_dict_free(&options);
-		if (ret < 0)
-		{
-			if (formatCtx)
-			{
-				avformat_close_input(&formatCtx);
-			}
-			return false;
-		}
-
-		ret = avformat_find_stream_info(formatCtx, nullptr);
-		if (ret < 0)
-		{
-			avformat_close_input(&formatCtx);
-			return false;
-		}
-
-		bool hasVideoStream = false;
-		for (unsigned int i = 0; i < formatCtx->nb_streams; ++i)
-		{
-			if (formatCtx->streams[i]->codecpar && formatCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
-			{
-				hasVideoStream = true;
-				break;
-			}
-		}
-
-		avformat_close_input(&formatCtx);
-		return hasVideoStream;
-	}
-
-	bool isFormatUsable(const QString& cameraId, const QString& cameraDescription, int width, int height, int fps)
-	{
-		const QString key = makeFormatCacheKey(cameraId, cameraDescription, width, height, fps);
-		{
-			std::lock_guard<std::mutex> lock(g_formatValidationCacheMutex);
-			auto it = g_formatValidationCache.constFind(key);
-			if (it != g_formatValidationCache.constEnd())
-			{
-				return it.value();
-			}
-		}
-
-		const bool ok = validateFormatByFFmpeg(cameraDescription, width, height, fps);
-		{
-			std::lock_guard<std::mutex> lock(g_formatValidationCacheMutex);
-			g_formatValidationCache.insert(key, ok);
-		}
-		return ok;
-	}
 }
 
 fplayer::CameraDescriptionFetcher::CameraDescriptionFetcher()
@@ -178,10 +91,12 @@ fplayer::CameraDescriptionFetcher& fplayer::CameraDescriptionFetcher::instance()
 
 QList<fplayer::CameraDescription> fplayer::CameraDescriptionFetcher::getDescriptions()
 {
+	// 每次刷新先清空并重建，保证 UI 获取的是“当前系统快照”。
 	m_cameraFormats.clear();
 	QList<fplayer::CameraDescription> descriptions;
 
-	// ffmpeg不擅长枚举设备，平台擅长枚举，因此这里获取时走平台
+	// 设备枚举走平台 API（DirectShow）：
+	// FFmpeg 更擅长“打开与解码”，不擅长完整设备能力枚举。
 	avdevice_register_all();
 #ifdef _WIN32 // 处理Windows平台，DirectShow
 
@@ -239,6 +154,7 @@ QList<fplayer::CameraDescription> fplayer::CameraDescriptionFetcher::getDescript
 	while (enumMoniker->Next(1, &moniker, nullptr) == S_OK)
 	{
 		CameraDescription device;
+		// 去重集合：某些驱动会重复上报同一格式。
 		QSet<QString> seenFormats;
 
 		QList<FCameraFormat> formatList;
@@ -354,11 +270,12 @@ QList<fplayer::CameraDescription> fplayer::CameraDescriptionFetcher::getDescript
 										fmt.height = height;
 										fmt.fps = fps;
 
-										if (isFormatUsable(device.id, device.description, width, height, fps))
-										{
-											formatList.push_back(fmt);
-											device.formats.push_back(formatText);
-										}
+										// 策略说明：
+										// 启动阶段仅做“候选格式枚举”，不做开流验证。
+										// 这样可以避免启动慢、摄像头反复亮灯；
+										// 真正验证在 selectCamera/selectCameraFormat 时执行。
+										formatList.push_back(fmt);
+										device.formats.push_back(formatText);
 									}
 								}
 
