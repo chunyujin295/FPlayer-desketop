@@ -77,24 +77,10 @@ namespace fplayer
 		AVFormatContext* formatContext = nullptr;
 		AVCodecContext* codecContext = nullptr;
 		AVStream* stream = nullptr;
-		SwsContext* swsContext = nullptr;
-		uint8_t* frameBuffer = nullptr;
-		int frameBufferSize = 0;
 		QThread* captureThread = nullptr;
 		bool isCapturing = false;
-		// bool isPaused = true;
 		PreviewTarget previewTarget;
 		FGLWidget* fGLWieget = nullptr;
-
-		// 用于存储摄像头设备信息
-		// struct CameraDeviceInfo
-		// {
-		// 	QString name;
-		// 	QString devicePath;
-		// 	QList<QString> formats;
-		// };
-
-		// QList<CameraDeviceInfo> cameraDevices;
 
 		~Impl()
 		{
@@ -104,11 +90,6 @@ namespace fplayer
 
 		void cleanup()
 		{
-			if (swsContext)
-			{
-				sws_freeContext(swsContext);
-				swsContext = nullptr;
-			}
 			if (codecContext)
 			{
 				avcodec_free_context(&codecContext);
@@ -119,20 +100,27 @@ namespace fplayer
 				avformat_close_input(&formatContext);
 				formatContext = nullptr;
 			}
-			if (frameBuffer)
-			{
-				av_free(frameBuffer);
-				frameBuffer = nullptr;
-				frameBufferSize = 0;
-			}
 		}
 
 		void stopCapture()
 		{
 			isCapturing = false;
+
+			// 中断阻塞的 av_read_frame
+			if (formatContext)
+			{
+				avformat_close_input(&formatContext);
+				formatContext = nullptr;
+			}
+
 			if (captureThread && captureThread->isRunning())
 			{
-				captureThread->wait();
+				captureThread->wait(3000);// 等待最多3秒
+				if (captureThread->isRunning())
+				{
+					captureThread->terminate();// 强制终止
+					captureThread->wait();
+				}
 				delete captureThread;
 				captureThread = nullptr;
 			}
@@ -266,21 +254,9 @@ namespace fplayer
 			return false;
 		}
 
-		// 分配帧缓冲区
-		int width = m_impl->codecContext->width;
-		int height = m_impl->codecContext->height;
-		m_impl->frameBufferSize = av_image_get_buffer_size(AV_PIX_FMT_RGB24, width, height, 1);
-		m_impl->frameBuffer = (uint8_t*)av_malloc(m_impl->frameBufferSize);
-
-		// 创建 SwsContext 用于格式转换
-		m_impl->swsContext = sws_getContext(width, height, m_impl->codecContext->pix_fmt,
-		                                    width, height, AV_PIX_FMT_RGB24,
-		                                    SWS_BILINEAR, nullptr, nullptr, nullptr);
-
 		// 启动捕获线程
 		m_impl->isCapturing = true;
-		// m_impl->isPaused = false;
-		// m_isPlaying = true;
+		m_isPlaying = true;
 		m_impl->captureThread = new QThread();
 		QObject::connect(m_impl->captureThread, &QThread::started, [this]() {
 			captureLoop();
@@ -327,31 +303,25 @@ namespace fplayer
 		if (target.backend_hint)
 		{
 			m_impl->fGLWieget = static_cast<FGLWidget*>(target.backend_hint);
+			auto glWidget = static_cast<FGLWidget*>(target.backend_hint);
+			// 使用 YUV 直接渲染，更高效
+			bool connected = QObject::connect(this, &CameraFFmpeg::yuvFrameReady,
+			                                  glWidget, &FGLWidget::updateYUVFrame, Qt::QueuedConnection);
+			qDebug() << "[Runtime] YUV signal connection established:" << connected;
 		}
-		// else if (target.window.hwnd)
-		// {
-		// 	// 尝试通过 HWND 获取 QWidget
-		// 	// 注意：这种方式在不同 Qt 版本中可能有差异
-		// 	m_impl->renderWidget = QWidget::find(reinterpret_cast<WId>(target.window.hwnd));
-		// }
-		//qdebug() << "Preview target set, renderWidget:" << m_impl->renderWidget;
+		else
+		{
+			qDebug() << "[Runtime] Failed to connect: ffmpegCamera=" << this << "backend_hint=" << target.backend_hint;
+		}
 	}
 
 	void CameraFFmpeg::captureLoop()
 	{
 		AVPacket* packet = av_packet_alloc();
 		AVFrame* frame = av_frame_alloc();
-		AVFrame* rgbFrame = av_frame_alloc();
-
-		// 设置 RGB 帧的参数
-		int width = m_impl->codecContext->width;
-		int height = m_impl->codecContext->height;
-		av_image_fill_arrays(rgbFrame->data, rgbFrame->linesize, m_impl->frameBuffer,
-		                     AV_PIX_FMT_RGB24, width, height, 1);
 
 		while (m_impl->isCapturing)
 		{
-			// if (m_impl->isPaused)
 			if (!m_isPlaying)
 			{
 				QThread::msleep(100);
@@ -368,7 +338,6 @@ namespace fplayer
 				}
 				else
 				{
-					// qWarning() << "Error reading frame:" << av_err2str(ret);
 					QThread::msleep(100);
 				}
 				continue;
@@ -379,7 +348,6 @@ namespace fplayer
 				ret = avcodec_send_packet(m_impl->codecContext, packet);
 				if (ret < 0)
 				{
-					// qWarning() << "Error sending packet:" << av_err2str(ret);
 					av_packet_unref(packet);
 					continue;
 				}
@@ -393,24 +361,44 @@ namespace fplayer
 					}
 					else if (ret < 0)
 					{
-						// qWarning() << "Error receiving frame:" << av_err2str(ret);
 						break;
 					}
 
-					// 转换为 RGB 格式
-					sws_scale(m_impl->swsContext, frame->data, frame->linesize, 0,
-					          frame->height, rgbFrame->data, rgbFrame->linesize);
-
-					// 将 RGB 数据渲染到 Qt 窗口
-					if (m_impl->fGLWieget && m_impl->fGLWieget->isVisible())
+					// 直接发射 YUV 数据，避免 CPU 转换
+					// FFmpeg 解码后的帧通常是 YUV420P 格式
+					if (frame->format == AV_PIX_FMT_YUV420P || frame->format == AV_PIX_FMT_YUVJ420P)
 					{
-						QImage image(m_impl->frameBuffer, frame->width, frame->height, QImage::Format_RGB888);
-						QPainter painter(m_impl->fGLWieget);
-						painter.drawImage(0, 0, image.scaled(m_impl->fGLWieget->size()));
+						const int yStride = frame->linesize[0];
+						const int uStride = frame->linesize[1];
+						const int vStride = frame->linesize[2];
+						const int width = frame->width;
+						const int height = frame->height;
+						const int uvHeight = height / 2;
+
+						QByteArray yBuffer(reinterpret_cast<const char*>(frame->data[0]), yStride * height);
+						QByteArray uBuffer(reinterpret_cast<const char*>(frame->data[1]), uStride * uvHeight);
+						QByteArray vBuffer(reinterpret_cast<const char*>(frame->data[2]), vStride * uvHeight);
+
+						static int frameCount = 0;
+						if (++frameCount % 30 == 0)  // 每30帧输出一次
+						{
+							qDebug() << "[CameraFFmpeg] Emitting YUV frame:" << width << "x" << height
+							         << "Y stride:" << yStride << "format:" << frame->format;
+						}
+						emit yuvFrameReady(
+							yBuffer,
+							uBuffer,
+							vBuffer,
+							width,
+							height,
+							yStride,
+							uStride,
+							vStride
+						);
 					}
 					else
 					{
-						qDebug() << "Captured frame:" << frame->width << "x" << frame->height;
+						qDebug() << "[CameraFFmpeg] Unsupported pixel format:" << frame->format;
 					}
 
 					av_frame_unref(frame);
@@ -420,7 +408,6 @@ namespace fplayer
 			av_packet_unref(packet);
 		}
 
-		av_frame_free(&rgbFrame);
 		av_frame_free(&frame);
 		av_packet_free(&packet);
 	}

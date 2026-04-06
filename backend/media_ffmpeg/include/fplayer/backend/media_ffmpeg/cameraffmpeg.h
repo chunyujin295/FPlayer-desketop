@@ -13,12 +13,12 @@
 #include <QObject>
 #include <QList>
 #include <QString>
+#include <QByteArray>
 
 // FFmpeg 头文件
 extern "C" {
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
-#include <libswscale/swscale.h>
 #include <libavutil/imgutils.h>
 }
 
@@ -48,6 +48,10 @@ namespace fplayer
 
 		bool isPlaying() const override;
 		void setPreviewTarget(const PreviewTarget& target) override;
+
+	signals:
+		void yuvFrameReady(const QByteArray& yData, const QByteArray& uData, const QByteArray& vData,
+		                   int width, int height, int yStride, int uStride, int vStride);
 
 	private:
 		void captureLoop();

@@ -29,6 +29,8 @@ namespace fplayer
 
 		// QVideoSink* videoSink() const;// 给 Qt6 backend 用
 		PreviewTarget previewTarget() override;
+		
+		void setBackendType(MediaBackendType backendType);
 
 	protected:
 		void showEvent(QShowEvent* e) override;// 确保 winId 可用

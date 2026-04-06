@@ -13,6 +13,7 @@
 #include <fplayer/api/export.h>
 #include <fplayer/api/media/mediabackendtype.h>
 #include <fplayer/api/media/previewtarget.h>
+#include <atomic>
 
 namespace fplayer
 {
@@ -53,7 +54,7 @@ namespace fplayer
 		int m_cameraIndex = 0;
 		QList<CameraDescription> m_descriptions;// 摄像头信息列表
 		MediaBackendType m_backend = MediaBackendType::Qt6;
-		bool m_isPlaying = false;
+		std::atomic<bool> m_isPlaying{false};
 	};
 }
 

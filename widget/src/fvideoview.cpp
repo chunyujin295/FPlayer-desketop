@@ -15,6 +15,28 @@ fplayer::FVideoView::FVideoView(QWidget* parent) : QWidget(parent)
 
 fplayer::FVideoView::~FVideoView() = default;
 
+void fplayer::FVideoView::setBackendType(MediaBackendType backendType)
+{
+	if (m_backendType == backendType)
+	{
+		return;
+	}
+
+	// 清理旧的 widget
+	if (m_qtVideoWidget)
+	{
+		delete m_qtVideoWidget;
+		m_qtVideoWidget = nullptr;
+	}
+	if (m_glWidget)
+	{
+		delete m_glWidget;
+		m_glWidget = nullptr;
+	}
+
+	m_backendType = backendType;
+}
+
 // QVideoSink* fplayer::FVideoView::videoSink() const
 // {
 // 	return m_sink;
@@ -34,31 +56,16 @@ fplayer::PreviewTarget fplayer::FVideoView::previewTarget()
 	t.window.height = height();
 	t.window.device_pixel_ratio = devicePixelRatioF();
 
-	if (m_qtVideoWidget)
+	// 只在需要时创建 widget
+	if (m_backendType == MediaBackendType::Qt6 && !m_qtVideoWidget)
 	{
-		delete m_qtVideoWidget;
-		m_qtVideoWidget = nullptr;
-	}
-	if (m_glWidget)
-	{
-		delete m_glWidget;
-		m_glWidget = nullptr;
-	}
-
-	switch (m_backendType)
-	{
-	// Qt6 视频输出
-	case MediaBackendType::Qt6: {
 		m_qtVideoWidget = new QVideoWidget(this);
 		m_lay->addWidget(m_qtVideoWidget);
-		break;
 	}
-
-	case MediaBackendType::FFmpeg: {
+	else if (m_backendType == MediaBackendType::FFmpeg && !m_glWidget)
+	{
 		m_glWidget = new FGLWidget(this);
 		m_lay->addWidget(m_glWidget);
-		break;
-	}
 	}
 
 	// 真正有用的部分
