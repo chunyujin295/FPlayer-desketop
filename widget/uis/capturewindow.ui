@@ -234,7 +234,7 @@
           <widget class="QComboBox" name="cmbFormats">
            <property name="minimumSize">
             <size>
-             <width>120</width>
+             <width>150</width>
              <height>0</height>
             </size>
            </property>
