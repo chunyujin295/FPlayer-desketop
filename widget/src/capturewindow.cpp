@@ -12,6 +12,12 @@
 #include <logger/logger.h>
 #include <QDebug>
 #include <qicon.h>
+#include <QApplication>
+#include <QLineEdit>
+#include <QTextEdit>
+#include <QPlainTextEdit>
+#include <QAbstractSpinBox>
+#include <QShortcut>
 
 CaptureWindow::CaptureWindow(QWidget* parent, fplayer::MediaBackendType backendType) :
 	QWidget(parent),
@@ -19,6 +25,22 @@ CaptureWindow::CaptureWindow(QWidget* parent, fplayer::MediaBackendType backendT
 {
 	ui->setupUi(this);
 	m_service = new fplayer::Service();
+	// 防止按钮点击后持有键盘焦点，导致空格再次触发同一按钮 click。
+	this->ui->btnPlay->setFocusPolicy(Qt::NoFocus);
+	this->ui->btnCut->setFocusPolicy(Qt::NoFocus);
+	this->ui->btnCast->setFocusPolicy(Qt::NoFocus);
+	this->ui->btnSettings->setFocusPolicy(Qt::NoFocus);
+	this->ui->btnFullscreen->setFocusPolicy(Qt::NoFocus);
+	auto refreshFullscreenButton = [this]() {
+		if (this->isFullScreen())
+		{
+			this->ui->btnFullscreen->setIcon(QIcon::fromTheme(QIcon::ThemeIcon::ViewRestore));
+		}
+		else
+		{
+			this->ui->btnFullscreen->setIcon(QIcon::fromTheme(QIcon::ThemeIcon::ViewFullscreen));
+		}
+	};
 
 	// 1) 初始化摄像头
 	m_service->initCamera(backendType);
@@ -74,17 +96,96 @@ CaptureWindow::CaptureWindow(QWidget* parent, fplayer::MediaBackendType backendT
 	}
 
 	connect(this->ui->btnPlay, &QPushButton::clicked, [this]() {
-		if (this->m_service->cameraIsPlaying())
+		this->togglePlayPause();
+	});
+
+	connect(this->ui->btnFullscreen, &QPushButton::clicked, [this, refreshFullscreenButton]() {
+		if (this->isFullScreen())
 		{
-			this->m_service->cameraPause();
-			this->ui->btnPlay->setIcon(QIcon::fromTheme(QIcon::ThemeIcon::MediaPlaybackStart));
+			this->showNormal();
 		}
 		else
 		{
-			this->m_service->cameraResume();
-			this->ui->btnPlay->setIcon(QIcon::fromTheme(QIcon::ThemeIcon::MediaPlaybackPause));
+			this->showFullScreen();
+		}
+		refreshFullscreenButton();
+	});
+
+	refreshFullscreenButton();
+
+	auto canUseGlobalHotkey = []() -> bool {
+		QWidget* fw = QApplication::focusWidget();
+		if (!fw)
+		{
+			return true;
+		}
+		// 文本输入类控件聚焦时，不拦截按键，避免影响输入体验。
+		if (qobject_cast<QLineEdit*>(fw) ||
+			qobject_cast<QTextEdit*>(fw) ||
+			qobject_cast<QPlainTextEdit*>(fw) ||
+			qobject_cast<QAbstractSpinBox*>(fw))
+		{
+			return false;
+		}
+		return true;
+	};
+
+	// 使用快捷键而不是 keyPressEvent，避免被子控件（如下拉框）吞键。
+	auto* scPlayPause = new QShortcut(QKeySequence(Qt::Key_Space), this);
+	scPlayPause->setContext(Qt::ApplicationShortcut);
+	connect(scPlayPause, &QShortcut::activated, this, [this, canUseGlobalHotkey]() {
+		if (!this->isActiveWindow() || !canUseGlobalHotkey())
+		{
+			return;
+		}
+		this->togglePlayPause();
+	});
+
+	auto* scFullscreen = new QShortcut(QKeySequence(Qt::Key_F), this);
+	scFullscreen->setContext(Qt::ApplicationShortcut);
+	connect(scFullscreen, &QShortcut::activated, this, [this, refreshFullscreenButton, canUseGlobalHotkey]() {
+		if (!this->isActiveWindow() || !canUseGlobalHotkey())
+		{
+			return;
+		}
+		if (this->isFullScreen())
+		{
+			this->showNormal();
+		}
+		else
+		{
+			this->showFullScreen();
+		}
+		refreshFullscreenButton();
+	});
+
+	auto* scExitFullscreen = new QShortcut(QKeySequence(Qt::Key_Escape), this);
+	scExitFullscreen->setContext(Qt::ApplicationShortcut);
+	connect(scExitFullscreen, &QShortcut::activated, this, [this, refreshFullscreenButton]() {
+		if (!this->isActiveWindow())
+		{
+			return;
+		}
+		if (this->isFullScreen())
+		{
+			this->showNormal();
+			refreshFullscreenButton();
 		}
 	});
+}
+
+void CaptureWindow::togglePlayPause()
+{
+	if (this->m_service->cameraIsPlaying())
+	{
+		this->m_service->cameraPause();
+		this->ui->btnPlay->setIcon(QIcon::fromTheme(QIcon::ThemeIcon::MediaPlaybackStart));
+	}
+	else
+	{
+		this->m_service->cameraResume();
+		this->ui->btnPlay->setIcon(QIcon::fromTheme(QIcon::ThemeIcon::MediaPlaybackPause));
+	}
 }
 
 CaptureWindow::~CaptureWindow()

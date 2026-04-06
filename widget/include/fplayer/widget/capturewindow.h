@@ -54,6 +54,7 @@ private:
 	// QList<QCameraDevice> m_devices;
 
 	fplayer::Service* m_service = nullptr;
+	void togglePlayPause();
 };
 
 
