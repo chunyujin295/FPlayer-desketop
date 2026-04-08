@@ -258,7 +258,7 @@ namespace fplayer
 		m_impl->formatContext->interrupt_callback.callback = ffmpegInterruptCallback;
 		m_impl->formatContext->interrupt_callback.opaque = &m_impl->isCapturing;
 		m_impl->formatContext->probesize = 32 * 1024;
-		m_impl->formatContext->max_analyze_duration = 200 * 1000; // 200ms (us)
+		m_impl->formatContext->max_analyze_duration = 200 * 1000;// 200ms (us)
 
 		AVDictionary* options = nullptr;
 		av_dict_set(&options, "analyzeduration", "200000", 0);
@@ -509,9 +509,9 @@ namespace fplayer
 						// 将输入像素格式统一转换为 YUV420P，简化 OpenGL 渲染端处理。
 						AVPixelFormat srcFormat = static_cast<AVPixelFormat>(frame->format);
 						if (!m_impl->swsContext ||
-							m_impl->swsWidth != frame->width ||
-							m_impl->swsHeight != frame->height ||
-							m_impl->swsSrcFormat != srcFormat)
+						    m_impl->swsWidth != frame->width ||
+						    m_impl->swsHeight != frame->height ||
+						    m_impl->swsSrcFormat != srcFormat)
 						{
 							if (m_impl->swsContext)
 							{
@@ -525,10 +525,10 @@ namespace fplayer
 							}
 
 							m_impl->swsContext = sws_getContext(
-								frame->width, frame->height, srcFormat,
-								frame->width, frame->height, AV_PIX_FMT_YUV420P,
-								SWS_BILINEAR, nullptr, nullptr, nullptr
-							);
+									frame->width, frame->height, srcFormat,
+									frame->width, frame->height, AV_PIX_FMT_YUV420P,
+									SWS_BILINEAR, nullptr, nullptr, nullptr
+									);
 							if (!m_impl->swsContext)
 							{
 								qDebug() << "[CameraFFmpeg] Failed to create sws context, src format:" << frame->format;
@@ -561,14 +561,14 @@ namespace fplayer
 
 						av_frame_make_writable(m_impl->swsFrame);
 						sws_scale(
-							m_impl->swsContext,
-							frame->data,
-							frame->linesize,
-							0,
-							frame->height,
-							m_impl->swsFrame->data,
-							m_impl->swsFrame->linesize
-						);
+								m_impl->swsContext,
+								frame->data,
+								frame->linesize,
+								0,
+								frame->height,
+								m_impl->swsFrame->data,
+								m_impl->swsFrame->linesize
+								);
 						renderFrame = m_impl->swsFrame;
 					}
 
@@ -589,18 +589,18 @@ namespace fplayer
 					if (++frameCount % 30 == 0)
 					{
 						qDebug() << "[CameraFFmpeg] Emitting YUV frame:" << width << "x" << height
-						         << "Y stride:" << yStride << "src format:" << frame->format;
+								<< "Y stride:" << yStride << "src format:" << frame->format;
 					}
 					emit yuvFrameReady(
-						yBuffer,
-						uBuffer,
-						vBuffer,
-						width,
-						height,
-						yStride,
-						uStride,
-						vStride
-					);
+							yBuffer,
+							uBuffer,
+							vBuffer,
+							width,
+							height,
+							yStride,
+							uStride,
+							vStride
+							);
 
 					av_frame_unref(frame);
 				}

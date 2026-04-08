@@ -43,14 +43,15 @@ flowchart TB
         U3[FGLWidget::paintGL]
     end
 
-    subgraph 采集线程(QThread)
+    subgraph "采集线程(QThread)"
         T1[captureLoop]
         T2[av_read_frame]
         T3[send_packet/receive_frame]
     end
 
     U1 --> T1
-    T3 -->|QueuedConnection + QByteArray| U3
+    T3 -->|QueuedConnection + QByteArray| U4[FGLWidget::updateYUVFrame]
+    U4 --> U3
     U2 --> T1
 ```
 
@@ -75,7 +76,9 @@ sequenceDiagram
     Cam->>Cam: stopCapture() + cleanup()
     Cam->>FF: avformat_open_input(video=...)
     Cam->>FF: avformat_find_stream_info()
-    Cam->>FF: avcodec_find_decoder/open2()
+    Cam->>FF: avcodec_find_decoder()
+    Cam->>FF: avcodec_parameters_to_context()
+    Cam->>FF: avcodec_open2()
     Cam->>Th: QThread::start()
     Th->>Cam: captureLoop()
     loop while isCapturing
@@ -145,9 +148,9 @@ flowchart TB
 
 ```mermaid
 flowchart LR
-    A[Y plane] --> T0[Texture0(R8/RED)]
-    B[U plane] --> T1[Texture1(R8/RED)]
-    C[V plane] --> T2[Texture2(R8/RED)]
+    A[Y plane] --> T0["Texture0(R8/RED)"]
+    B[U plane] --> T1["Texture1(R8/RED)"]
+    C[V plane] --> T2["Texture2(R8/RED)"]
     T0 --> S[Fragment Shader]
     T1 --> S
     T2 --> S
@@ -190,8 +193,8 @@ flowchart TB
 
 ```mermaid
 flowchart LR
-    A[selectCameraFormat(index)] --> B[更新desc.formatIndex]
-    B --> C[调用selectCamera(m_cameraIndex)]
+    A["selectCameraFormat(index)"] --> B[更新desc.formatIndex]
+    B --> C["调用selectCamera(m_cameraIndex)"]
     C --> D[停旧线程 + 清理]
     D --> E[按video_size/framerate重开]
     E --> F{打开成功?}
