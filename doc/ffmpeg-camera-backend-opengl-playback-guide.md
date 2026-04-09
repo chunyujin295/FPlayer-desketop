@@ -45,10 +45,10 @@
 4. `avformat_open_input(..., av_find_input_format("dshow"), &options)` 打开设备。
 5. `avformat_find_stream_info` 获取流信息。
 6. 找首个 `AVMEDIA_TYPE_VIDEO` 流并建立解码器：
-   - `avcodec_find_decoder`
-   - `avcodec_alloc_context3`
-   - `avcodec_parameters_to_context`
-   - `avcodec_open2`
+  - `avcodec_find_decoder`
+  - `avcodec_alloc_context3`
+  - `avcodec_parameters_to_context`
+  - `avcodec_open2`
 7. 启动采集线程，在线程中执行 `captureLoop()`。
 
 ---
@@ -120,8 +120,8 @@
 1. 更新当前摄像头的 `formatIndex`。
 2. 复用 `selectCamera(m_cameraIndex)` 全流程重开。
 3. 打开前从格式文本中解析 `width/height/fps`，设置到 dshow 参数：
-   - `video_size=<WxH>`
-   - `framerate=<fps>`
+  - `video_size=<WxH>`
+  - `framerate=<fps>`
 4. 若“指定格式打开失败”，自动 fallback：不带显式分辨率再试一次（设备默认格式）。
 
 结论：分辨率切换不是“热改参数”，而是“重建采集会话”，以成功率优先。
@@ -192,4 +192,3 @@
 本项目的 FFmpeg 摄像头播放链路本质是：  
 **DirectShow 枚举候选能力 -> FFmpeg 按选项真实开流验证 -> 解码帧统一为 YUV420P -> 跨线程安全投递到 FGLWidget -> OpenGL 三纹理着色渲染。**  
 其中“分辨率可播放性”主要靠“打开期实测验证 + 失败 fallback + 渲染格式统一与 stride 处理”来保障。
-
